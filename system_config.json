@@ -1,0 +1,29 @@
+{
+  "auth": {
+    "username": "Group_05",
+    "password_hash": "2b1a950d529ab4cc59b7c2f38b596c169a24341aefb0612dfa0303acca228ab9"
+  },
+  "probability": {
+    "auto_resubmit_threshold": 0.6,
+    "human_review_threshold": 0.3
+  },
+  "retry": {
+    "max_attempts": 3
+  },
+  "filing_windows": {
+    "ups_days": 15,
+    "fedex_days": 15,
+    "auto_file_days_remaining": 2
+  },
+  "claim_amount": 100.0,
+  "email": {
+    "mode": "manual",
+    "env": "test",
+    "test_address": "",
+    "sender": ""
+  },
+  "scheduler": {
+    "weekly_day": "Monday",
+    "daily_enabled": true
+  }
+}

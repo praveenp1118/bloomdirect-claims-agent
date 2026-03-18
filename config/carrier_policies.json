@@ -1,0 +1,57 @@
+{
+  "UPS_Ground": {
+    "carrier": "UPS",
+    "claim_channel": "shippo",
+    "claim_email": "support@shippo.com",
+    "sla_working_days": 1,
+    "filing_window_days": 15,
+    "damage_window_days": 60,
+    "lost_window_days": 60,
+    "eligible_for_gsr": true,
+    "exclusions": ["weather", "recipient_unavailable", "address_error", "SurePost"]
+  },
+  "FEDEX_Ground": {
+    "carrier": "FedEx",
+    "claim_channel": "direct",
+    "claim_email": "file.claim@fedex.com",
+    "sla_working_days": 1,
+    "filing_window_days": 15,
+    "damage_window_days": 60,
+    "lost_window_days": 270,
+    "eligible_for_gsr": true,
+    "exclusions": ["weather", "recipient_unavailable", "address_error", "Ground_Economy"]
+  },
+  "Standard_Overnight": {
+    "carrier": "FedEx",
+    "claim_channel": "direct",
+    "claim_email": "file.claim@fedex.com",
+    "sla_working_days": 1,
+    "filing_window_days": 15,
+    "damage_window_days": 60,
+    "lost_window_days": 270,
+    "eligible_for_gsr": true,
+    "exclusions": ["weather", "recipient_unavailable", "address_error"]
+  },
+  "Priority_Overnight": {
+    "carrier": "FedEx",
+    "claim_channel": "direct",
+    "claim_email": "file.claim@fedex.com",
+    "sla_working_days": 1,
+    "filing_window_days": 15,
+    "damage_window_days": 60,
+    "lost_window_days": 270,
+    "eligible_for_gsr": true,
+    "exclusions": ["weather", "recipient_unavailable", "address_error"]
+  },
+  "FEDEX International": {
+    "carrier": "FedEx",
+    "claim_channel": "direct",
+    "claim_email": "file.claim@fedex.com",
+    "sla_working_days": 2,
+    "filing_window_days": 15,
+    "damage_window_days": 21,
+    "lost_window_days": 270,
+    "eligible_for_gsr": true,
+    "exclusions": ["weather", "customs", "recipient_unavailable", "address_error"]
+  }
+}

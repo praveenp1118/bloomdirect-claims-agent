@@ -1,0 +1,62 @@
+# ── Secrets (NEVER commit these) ────────────────────────────────────
+.env
+*.env
+config/secrets.json
+
+# ── Database ─────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Python ───────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ── Virtual environments ─────────────────────────────────────────────
+venv/
+env/
+.venv/
+ENV/
+
+# ── Jupyter ──────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── OS ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs ─────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── AWS / cloud ──────────────────────────────────────────────────────
+.aws/
+*.pem
+*.key
+
+# ── Gmail OAuth tokens ───────────────────────────────────────────────
+token.json
+token.pickle
+credentials.json
+
+# ── LangSmith / tracing ──────────────────────────────────────────────
+.langsmith/
+
+# ── Data (synthetic CSVs ok, real data never) ────────────────────────
+data/real_*.csv
+data/orders_*.csv

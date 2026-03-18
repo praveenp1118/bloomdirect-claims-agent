@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+
+  # ── Streamlit Dashboard ──────────────────────────────────────────
+  dashboard:
+    build: .
+    container_name: bloomdirect_dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./bloomdirect.db:/app/bloomdirect.db
+      - ./config:/app/config
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - RUN_MODE=production
+    restart: unless-stopped
+    depends_on:
+      - scheduler
+
+  # ── Background Scheduler ─────────────────────────────────────────
+  scheduler:
+    build: .
+    container_name: bloomdirect_scheduler
+    command: ["python", "scheduler/scheduler.py"]
+    volumes:
+      - ./bloomdirect.db:/app/bloomdirect.db
+      - ./config:/app/config
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - RUN_MODE=production
+    restart: unless-stopped
+
+volumes:
+  db_data:

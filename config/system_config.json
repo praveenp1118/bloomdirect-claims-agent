@@ -1,0 +1,32 @@
+{
+  "claim_amount": 100,
+  "filing_window_days": 15,
+  "followup_day": 14,
+  "urgency_threshold_days": 2,
+  "probability_thresholds": {
+    "auto_resubmit_high": 0.6,
+    "auto_resubmit_low": 0.3,
+    "borderline_eligibility": 0.4
+  },
+  "email": {
+    "mode": "test",
+    "test": {
+      "ups_claims": "your_personal@email.com",
+      "fedex_claims": "your_personal@email.com"
+    },
+    "production": {
+      "ups_claims": "support@shippo.com",
+      "fedex_claims": "file.claim@fedex.com"
+    }
+  },
+  "email_generation_mode": "manual",
+  "scheduler": {
+    "daily_time": "00:00",
+    "daily_timezone": "America/Los_Angeles",
+    "hourly_interval": 1,
+    "day_offsets": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "sleep_between_dates": 30
+  },
+  "mcp_retry_interval_hours": 6,
+  "data_source": "live"
+}
