@@ -383,8 +383,38 @@ BloomDirect Logistics Team"""
 # ── NODE 8: FILE CLAIM ────────────────────────────────────────────
 
 def node_file_claim(state: ClaimState) -> ClaimState:
-    """Send claim email via Email MCP."""
+    """Send claim email via Email MCP — respects email mode from system_config.json."""
     print(f"[Node] file_claim: {state.get('claim_id')}")
+
+    # Check email mode — only auto_send fires immediately
+    # manual and auto_generate save draft only, no send
+    import json
+    try:
+        with open("config/system_config.json") as _f:
+            _cfg = json.load(_f)
+        email_mode = _cfg.get("email", {}).get("mode", "manual")
+    except Exception:
+        email_mode = "manual"
+
+    order       = state["validated_order"]
+    classification = state["classification"]
+
+    if email_mode != "auto_send":
+        # Save draft to DB but do NOT send
+        session = get_session()
+        try:
+            claim = session.query(Claim).filter(
+                Claim.claim_id == state["claim_id"]
+            ).first()
+            if claim:
+                claim.draft_email_text = state["draft_body"]
+                claim.status           = "draft_pending_send"
+                claim.updated_at       = datetime.now()
+                session.commit()
+        finally:
+            session.close()
+        print(f"[Node] file_claim: mode={email_mode} — draft saved, not sent")
+        return {**state, "filed": False, "thread_id": None}
 
     from mcp_servers.email_claims_mcp import send_claim_email
 

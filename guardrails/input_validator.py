@@ -44,10 +44,10 @@ NOT_PICKED_UP_STATUSES = {
 }
 
 VALID_SHIP_METHODS = {
-    "UPS_Ground",
-    "FEDEX_Ground",
-    "Standard_Overnight",
-    "Priority_Overnight",
+    "UPS_Ground", "UPS Ground",
+    "FEDEX_Ground", "FEDEX_GROUND",
+    "Standard_Overnight", "STANDARD_OVERNIGHT",
+    "Priority_Overnight", "PRIORITY_OVERNIGHT",
     "FEDEX International",
 }
 
@@ -103,11 +103,41 @@ class ShipmentInput(BaseModel):
     def validate_status_date(cls, v):
         if not v:
             return v
-        # Accept "YYYY-MM-DD HH:MM" or "YYYY-MM-DD"
-        for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        import re as _re
+        # Replace T separator and strip timezone
+        clean = v.replace("T", " ")
+        clean = _re.sub(r"[+-]\d{2}:\d{2}$", "", clean).strip()
+        clean = clean[:16]
+        # Try YYYY-MM-DD HH:MM
+        try:
+            datetime.strptime(clean, "%Y-%m-%d %H:%M")
+            return clean
+        except ValueError:
+            pass
+        # Try YYYY-MM-DD
+        try:
+            datetime.strptime(clean[:10], "%Y-%m-%d")
+            return clean[:10]
+        except ValueError:
+            pass
+        raise ValueError(f"Invalid status date format: {v}")
+
+    @classmethod
+    def validate_status_date(cls, v):
+        if not v:
+            return v
+        # Normalize: strip timezone, replace T with space
+        # Handles: "2026-03-16T13:08:00-07:00", "2026-03-16 13:08", "2026-03-16"
+        normalized = v.replace("T", " ")
+        # Strip timezone offset (+HH:MM or -HH:MM)
+        import re as _re
+        normalized = _re.sub(r"[+-]\d{2}:\d{2}$", "", normalized).strip()
+        # Take first 16 chars (YYYY-MM-DD HH:MM)
+        normalized = normalized[:16]
+        for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d"):
             try:
-                datetime.strptime(v[:16], fmt[:len(fmt)])
-                return v
+                datetime.strptime(normalized[:len(fmt)], fmt)
+                return normalized
             except ValueError:
                 continue
         raise ValueError(f"Invalid status date format: {v}")

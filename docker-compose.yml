@@ -1,39 +1,42 @@
-version: "3.9"
-
 services:
 
-  # ── Streamlit Dashboard ──────────────────────────────────────────
   dashboard:
     build: .
     container_name: bloomdirect_dashboard
     ports:
       - "8501:8501"
     volumes:
-      - ./bloomdirect.db:/app/bloomdirect.db
-      - ./config:/app/config
       - ./data:/app/data
-    env_file:
-      - .env
+      - ./.env:/app/.env
+      - ./dashboard:/app/dashboard
+      - ./agents:/app/agents
+      - ./orchestrator:/app/orchestrator
+      - ./scheduler:/app/scheduler
+      - ./guardrails:/app/guardrails
+      - ./mcp_servers:/app/mcp_servers
+      - ./config:/app/config
+      - ./database:/app/database
     environment:
-      - RUN_MODE=production
+      - PYTHONPATH=/app
     restart: unless-stopped
     depends_on:
       - scheduler
 
-  # ── Background Scheduler ─────────────────────────────────────────
   scheduler:
     build: .
     container_name: bloomdirect_scheduler
     command: ["python", "scheduler/scheduler.py"]
     volumes:
-      - ./bloomdirect.db:/app/bloomdirect.db
-      - ./config:/app/config
       - ./data:/app/data
-    env_file:
-      - .env
+      - ./.env:/app/.env
+      - ./dashboard:/app/dashboard
+      - ./agents:/app/agents
+      - ./orchestrator:/app/orchestrator
+      - ./scheduler:/app/scheduler
+      - ./guardrails:/app/guardrails
+      - ./mcp_servers:/app/mcp_servers
+      - ./config:/app/config
+      - ./database:/app/database
     environment:
-      - RUN_MODE=production
+      - PYTHONPATH=/app
     restart: unless-stopped
-
-volumes:
-  db_data:

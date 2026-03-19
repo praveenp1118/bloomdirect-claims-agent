@@ -8,7 +8,12 @@
     "damage_window_days": 60,
     "lost_window_days": 60,
     "eligible_for_gsr": true,
-    "exclusions": ["weather", "recipient_unavailable", "address_error", "SurePost"]
+    "exclusions": [
+      "weather",
+      "recipient_unavailable",
+      "address_error",
+      "SurePost"
+    ]
   },
   "FEDEX_Ground": {
     "carrier": "FedEx",
@@ -19,7 +24,12 @@
     "damage_window_days": 60,
     "lost_window_days": 270,
     "eligible_for_gsr": true,
-    "exclusions": ["weather", "recipient_unavailable", "address_error", "Ground_Economy"]
+    "exclusions": [
+      "weather",
+      "recipient_unavailable",
+      "address_error",
+      "Ground_Economy"
+    ]
   },
   "Standard_Overnight": {
     "carrier": "FedEx",
@@ -30,7 +40,11 @@
     "damage_window_days": 60,
     "lost_window_days": 270,
     "eligible_for_gsr": true,
-    "exclusions": ["weather", "recipient_unavailable", "address_error"]
+    "exclusions": [
+      "weather",
+      "recipient_unavailable",
+      "address_error"
+    ]
   },
   "Priority_Overnight": {
     "carrier": "FedEx",
@@ -41,7 +55,11 @@
     "damage_window_days": 60,
     "lost_window_days": 270,
     "eligible_for_gsr": true,
-    "exclusions": ["weather", "recipient_unavailable", "address_error"]
+    "exclusions": [
+      "weather",
+      "recipient_unavailable",
+      "address_error"
+    ]
   },
   "FEDEX International": {
     "carrier": "FedEx",
@@ -52,6 +70,35 @@
     "damage_window_days": 21,
     "lost_window_days": 270,
     "eligible_for_gsr": true,
-    "exclusions": ["weather", "customs", "recipient_unavailable", "address_error"]
+    "exclusions": [
+      "weather",
+      "customs",
+      "recipient_unavailable",
+      "address_error"
+    ]
+  },
+  "PRIORITY_OVERNIGHT": {
+    "carrier": "FedEx",
+    "sla_working_days": 1,
+    "claim_channel": "email",
+    "claim_email": "file.claim@fedex.com"
+  },
+  "STANDARD_OVERNIGHT": {
+    "carrier": "FedEx",
+    "sla_working_days": 1,
+    "claim_channel": "email",
+    "claim_email": "file.claim@fedex.com"
+  },
+  "UPS Ground": {
+    "carrier": "UPS",
+    "sla_working_days": 1,
+    "claim_channel": "email",
+    "claim_email": "support@shippo.com"
+  },
+  "FEDEX_GROUND": {
+    "carrier": "FedEx",
+    "sla_working_days": 1,
+    "claim_channel": "email",
+    "claim_email": "file.claim@fedex.com"
   }
 }
