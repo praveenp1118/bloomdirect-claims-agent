@@ -54,7 +54,7 @@ def get_target_email(carrier: str) -> str:
 
 # ── GMAIL SMTP SENDER ─────────────────────────────────────────────
 
-def send_via_smtp(to: str, subject: str, body: str) -> dict:
+def send_via_smtp(to: str, subject: str, body: str, in_reply_to: str = "", cc: str = "") -> dict:
     """Send email via Gmail SMTP using App Password."""
     import smtplib
 
@@ -62,14 +62,23 @@ def send_via_smtp(to: str, subject: str, body: str) -> dict:
     msg["Subject"] = subject
     msg["From"]    = GMAIL_ADDRESS
     msg["To"]      = to
+    if cc:
+        msg["Cc"] = cc
+    import uuid
+    msg_id = f"<{uuid.uuid4()}@bloomdirect.claims>"
+    msg["Message-ID"] = msg_id
+    if in_reply_to:
+        msg["In-Reply-To"] = in_reply_to
+        msg["References"] = in_reply_to
 
     msg.attach(MIMEText(body, "plain"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_ADDRESS, to, msg.as_string())
-        return {"success": True, "message": "Email sent via SMTP"}
+            recipients = [to] + ([cc] if cc else [])
+            server.sendmail(GMAIL_ADDRESS, recipients, msg.as_string())
+        return {"success": True, "message": "Email sent via SMTP", "message_id": msg_id}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -136,47 +145,38 @@ def send_mock_email(to: str, subject: str, body: str, claim_id: int) -> dict:
 
 def classify_response(email_body: str) -> dict:
     """
-    Use keyword matching to classify carrier response.
+    Classify carrier response using LLM with keyword fallback.
     Returns classification: APPROVED / REJECTED / MORE_INFO / UNKNOWN
     """
+    try:
+        from anthropic import Anthropic
+        client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        prompt = f"""Classify this carrier claim response email into exactly one category.\n\nCategories:\n- APPROVED: Carrier approved the claim, credit/refund confirmed\n- REJECTED: Carrier denied/rejected the claim\n- MORE_INFO: Carrier needs additional information\n- UNKNOWN: Cannot determine\n\nEmail:\n---\n{email_body[:1500]}\n---\n\nReply with ONLY JSON:\n{{\"classification\": \"APPROVED|REJECTED|MORE_INFO|UNKNOWN\", \"rejection_reason\": \"reason if rejected else null\", \"confidence\": 0.9}}"""
+        response = client.messages.create(model="claude-sonnet-4-6", max_tokens=200, messages=[{"role": "user", "content": prompt}])
+        raw = response.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"): raw = raw[4:]
+            raw = raw.strip()
+        result = json.loads(raw)
+        print(f"[Email MCP] LLM classified: {result['classification']}")
+        return result
+    except Exception as e:
+        print(f"[Email MCP] LLM classify failed ({e}), keyword fallback")
     body_lower = email_body.lower()
-
-    # Approval indicators
-    approval_keywords = [
-        "approved", "credit has been applied", "refund has been processed",
-        "credit will be applied", "claim has been approved",
-        "your request has been approved", "we have approved",
-        "credit issued", "refund issued",
-    ]
-
-    # Rejection indicators
-    rejection_keywords = [
-        "denied", "rejected", "unable to approve", "not eligible",
-        "does not qualify", "cannot be approved", "claim is denied",
-        "we are unable to", "outside our service guarantee",
-        "weather", "act of god", "beyond our control",
-        "guarantee was suspended",
-    ]
-
-    # More info needed
-    more_info_keywords = [
-        "additional information", "please provide", "documentation required",
-        "need more details", "follow up", "investigation",
-        "photos required", "invoice required",
-    ]
-
+    rejection_keywords = ["denied", "rejected", "unable to approve", "not eligible", "does not qualify", "cannot be approved", "claim is denied", "not approved", "guarantee was suspended"]
+    approval_keywords = ["credit has been applied", "refund has been processed", "claim has been approved", "we have approved", "credit issued", "refund issued"]
+    more_info_keywords = ["additional information", "please provide", "documentation required", "need more details"]
+    for kw in rejection_keywords:
+        if kw in body_lower:
+            return {"classification": "REJECTED", "matched_keyword": kw, "rejection_reason": extract_rejection_reason(email_body)}
     for kw in approval_keywords:
         if kw in body_lower:
             return {"classification": "APPROVED", "matched_keyword": kw}
-
-    for kw in rejection_keywords:
-        if kw in body_lower:
-            return {"classification": "REJECTED", "matched_keyword": kw,
-                    "rejection_reason": extract_rejection_reason(email_body)}
-
     for kw in more_info_keywords:
         if kw in body_lower:
             return {"classification": "MORE_INFO", "matched_keyword": kw}
+    return {"classification": "UNKNOWN", "matched_keyword": None}
 
     return {"classification": "UNKNOWN", "matched_keyword": None}
 
@@ -273,7 +273,7 @@ def update_claim_thread(claim_id: int, thread_id: str,
 
 def send_claim_email(to: str, subject: str, body: str,
                       claim_id: int, carrier: str,
-                      tracking_id: str) -> dict:
+                      tracking_id: str, cc: str = "") -> dict:
     """
     MCP Tool: Send a claim email to carrier.
 
@@ -295,9 +295,9 @@ def send_claim_email(to: str, subject: str, body: str,
     Returns:
         dict with success, thread_id, mode
     """
-    # Resolve actual target based on email mode
-    actual_to = get_target_email(carrier)
-    print(f"[Email MCP] Sending to: {actual_to} (mode: {EMAIL_MODE})")
+    # Use the to address passed by dashboard (already resolved by dashboard)
+    actual_to = to or get_target_email(carrier)
+    print(f"[Email MCP] Sending to: {actual_to}")
 
     result = None
 
@@ -307,9 +307,21 @@ def send_claim_email(to: str, subject: str, body: str,
 
     # App Password available → SMTP
     elif GMAIL_APP_PASSWORD:
-        result = send_via_smtp(actual_to, subject, body)
+        # Check if this is a resubmission — get original Message-ID for threading
+        original_msg_id = ""
+        try:
+            session_db = get_session()
+            claim_obj = session_db.query(Claim).filter_by(claim_id=claim_id).first()
+            if claim_obj and claim_obj.gmail_thread_id and claim_obj.gmail_thread_id.startswith("<"):
+                original_msg_id = claim_obj.gmail_thread_id
+            session_db.close()
+        except Exception:
+            pass
+        result = send_via_smtp(actual_to, subject, body, in_reply_to=original_msg_id, cc=cc)
         if result["success"]:
-            result["thread_id"] = f"smtp_{claim_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            # Store Message-ID (not smtp_ prefix) for threading
+            msg_id = result.get("message_id", f"smtp_{claim_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}")
+            result["thread_id"] = msg_id
 
     # Log to DB
     if result and result.get("success"):
@@ -348,6 +360,71 @@ def check_email_response(thread_id: str, claim_id: int) -> dict:
             "thread_id": thread_id,
             "classification": None,
         }
+
+    # IMAP check (App Password mode)
+    if GMAIL_APP_PASSWORD and (thread_id.startswith("smtp_") or thread_id.startswith("<")):
+        try:
+            import imaplib
+            import email as email_lib
+            session_db = get_session()
+            try:
+                claim_obj = session_db.query(Claim).filter_by(claim_id=claim_id).first()
+                search_tid = claim_obj.tracking_id if claim_obj else ""
+            finally:
+                session_db.close()
+            if not search_tid:
+                return {"has_response": False, "thread_id": thread_id}
+            mail = imaplib.IMAP4_SSL("imap.gmail.com")
+            mail.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
+            mail.select("INBOX")
+            status, messages = mail.search(None, f'SUBJECT "{search_tid}"')
+            if status != "OK" or not messages[0]:
+                mail.logout()
+                return {"has_response": False, "thread_id": thread_id}
+            msg_ids = messages[0].split()
+            reply_msg = None
+            for mid in reversed(msg_ids):
+                s2, d2 = mail.fetch(mid, "(RFC822)")
+                if s2 == "OK":
+                    m2 = email_lib.message_from_bytes(d2[0][1])
+                    sender = m2.get("From", "").lower()
+                    if GMAIL_ADDRESS.lower() not in sender:
+                        reply_msg = m2
+                        break
+            if not reply_msg:
+                mail.logout()
+                return {"has_response": False, "thread_id": thread_id}
+            body = ""
+            if reply_msg.is_multipart():
+                for part in reply_msg.walk():
+                    if part.get_content_type() == "text/plain":
+                        body = part.get_payload(decode=True).decode("utf-8", errors="replace")
+                        break
+            else:
+                body = reply_msg.get_payload(decode=True).decode("utf-8", errors="replace")
+            subject = reply_msg.get("Subject", "")
+            mail.logout()
+            classification = classify_response(body)
+            carrier_case_id = extract_carrier_case_id(body, subject)
+            log_email(
+                claim_id=claim_id, tracking_id=search_tid,
+                direction="received", subject=subject, body=body,
+                status=classification["classification"].lower(),
+                rejection_reason=classification.get("rejection_reason"),
+            )
+            print(f"[Email MCP] IMAP reply found for {search_tid}: {classification['classification']}")
+            return {
+                "has_response": True, "thread_id": thread_id,
+                "classification": classification["classification"],
+                "rejection_reason": classification.get("rejection_reason"),
+                "carrier_case_id": carrier_case_id,
+                "raw_body": body[:500],
+            }
+        except Exception as e:
+            print(f"[Email MCP] IMAP check error: {e}")
+            return {"has_response": False, "error": str(e)}
+
+
 
     # Real Gmail API check
     try:

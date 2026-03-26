@@ -82,7 +82,7 @@ def classify_from_status(last_status: str) -> str:
     """
     status_lower = last_status.lower()
 
-    if last_status == "Delivered":
+    if last_status == "Delivered" in last_status.lower():
         return "DELIVERED"  # Need date comparison next
 
     # Damage indicators
@@ -115,7 +115,7 @@ def classify_shipment(order: dict, mcp_history: Optional[list] = None) -> dict:
 
     result = {
         "track_id": track_id,
-        "partner_order_id": order["partner_order_id"],
+        "partner_order_id": order.get("partner_order_id") or order.get("tracking_id", "UNKNOWN"),
         "ship_method": ship_method,
         "ship_date": order["ship_date"],
         "carrier": POLICIES.get(ship_method, {}).get("carrier", "Unknown"),
@@ -124,6 +124,7 @@ def classify_shipment(order: dict, mcp_history: Optional[list] = None) -> dict:
         "needs_mcp": False,
         "occasion_type": infer_occasion(gift_message),
         "delay_days": 0,
+        "promised_date": None,
         "first_bad_event": None,
         "notes": [],
     }
@@ -134,13 +135,23 @@ def classify_shipment(order: dict, mcp_history: Optional[list] = None) -> dict:
         result["notes"].append("Pickup not confirmed — call MCP to verify")
         return result
 
-    # Use first_track_status_date as pickup date
-    pickup_date = datetime.strptime(first_status_date_str[:10], "%Y-%m-%d")
+    # Use first_track_status_date as pickup date (fall back to ship_date)
+    pickup_str = first_status_date_str[:10] if first_status_date_str else order.get("ship_date", "")[:10]
+    if not pickup_str:
+        result["failure_type"] = "UNKNOWN"
+        result["notes"].append("No pickup or ship date available")
+        return result
+    try:
+        pickup_date = datetime.strptime(pickup_str, "%Y-%m-%d")
+    except ValueError:
+        result["failure_type"] = "UNKNOWN"
+        result["notes"].append(f"Invalid date: {pickup_str}")
+        return result
     promised_date = get_promised_date(pickup_date, ship_method)
     result["promised_date"] = promised_date.strftime("%Y-%m-%d")
 
     # Step 2: Check if delivered
-    if last_status == "Delivered":
+    if "delivered" in last_status.lower():
         delivery_date = datetime.strptime(last_status_date_str[:10], "%Y-%m-%d")
         if delivery_date > promised_date:
             delay_days = (delivery_date - promised_date).days
@@ -177,6 +188,10 @@ def classify_from_mcp_history(result: dict, history: list) -> dict:
         if event.get("status", "").lower() == "delivered":
             delivery_date_str = event.get("date", "")
             delivery_date = datetime.strptime(delivery_date_str[:10], "%Y-%m-%d")
+            if not result.get("promised_date"):
+                result["failure_type"] = "UNKNOWN"
+                result["notes"].append("No promised date — cannot determine delay")
+                return result
             promised_date = datetime.strptime(result["promised_date"], "%Y-%m-%d")
             if delivery_date > promised_date:
                 result["failure_type"] = "LATE"
@@ -226,7 +241,30 @@ def classify_from_mcp_history(result: dict, history: list) -> dict:
             result["notes"].append(f"No claim — address/receiver issue: {event.get('status')}")
             return result
 
-    # Unknown pattern
+    # Check against promised date
+    from datetime import date as date_today
+    if not result.get("promised_date"):
+        result["failure_type"] = "UNKNOWN"
+        result["notes"].append("No promised date — cannot determine delay")
+        return result
+    try:
+        promised = datetime.strptime(result["promised_date"], "%Y-%m-%d")
+        if date_today.today() > promised.date():
+            # Past promised date and still not delivered — LATE
+            delay_days = (date_today.today() - promised.date()).days
+            result["failure_type"] = "LATE"
+            result["delay_days"] = delay_days
+            result["notes"].append(f"Not delivered — {delay_days} day(s) past promised date {promised.date()}")
+            return result
+        else:
+            # Still within SLA window — running on time
+            result["failure_type"] = "ON_TIME"
+            result["notes"].append(f"In transit — within SLA window. Promised: {promised.date()}")
+            return result
+    except Exception:
+        pass
+
+    # Unknown pattern — genuinely can't determine
     result["failure_type"] = "UNKNOWN"
     result["notes"].append("Unknown failure pattern — no 5yr history match — route to HITL")
     return result

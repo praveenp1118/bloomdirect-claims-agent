@@ -270,6 +270,76 @@ def build_short_label(classification: dict) -> str:
 
 # ── NODE 6: HITL QUEUE ────────────────────────────────────────────
 
+
+
+# ── NODE 5b: GENERATE REASONING ───────────────────────────────────────────
+
+def node_generate_reasoning(state: ClaimState) -> ClaimState:
+    """
+    Run Reasoning Generator — lightweight LLM that analyses tracking history
+    and generates short_label + llm_narrative.
+    Only runs in auto_generate and auto_send email modes.
+    Manual mode: skipped (user generates from dashboard).
+    """
+    import json as _json
+
+    # Check email mode
+    try:
+        with open("config/system_config.json") as _f:
+            _cfg = _json.load(_f)
+        email_mode = _cfg.get("email", {}).get("mode", "manual")
+    except Exception:
+        email_mode = "manual"
+
+    if email_mode == "manual":
+        print(f"[Node] generate_reasoning: SKIPPED (manual mode)")
+        return state
+
+    print(f"[Node] generate_reasoning: claim_id={state.get('claim_id')}")
+
+    try:
+        from agents.reasoning_generator import generate_reasoning
+        classification = state.get("classification", {})
+        order          = state.get("validated_order", {})
+        mcp_history    = state.get("mcp_history", [])
+
+        result = generate_reasoning(
+            tracking_id     = order.get("track_id", ""),
+            carrier         = classification.get("carrier", ""),
+            ship_method     = order.get("ship_method", ""),
+            ship_date       = order.get("ship_date", ""),
+            failure_type    = classification.get("failure_type", "LATE"),
+            delay_days      = int(classification.get("delay_days", 1) or 1),
+            first_bad_event = classification.get("first_bad_event"),
+            promised_date   = classification.get("promised_date"),
+            delivered_date  = classification.get("delivered_date"),
+            tracking_history= mcp_history,
+            occasion_type   = classification.get("occasion_type"),
+        )
+
+        # Save to DB
+        if state.get("claim_id"):
+            session = get_session()
+            try:
+                claim = session.query(Claim).filter(
+                    Claim.claim_id == state["claim_id"]
+                ).first()
+                if claim:
+                    claim.short_label   = result["short_label"]
+                    claim.llm_narrative = result["narrative"]
+                    claim.updated_at    = datetime.now()
+                    session.commit()
+            finally:
+                session.close()
+
+        print(f"[Node] generate_reasoning: '{result['short_label']}'")
+        return state
+
+    except Exception as e:
+        print(f"[Node] generate_reasoning ERROR: {e}")
+        return state
+
+
 def node_add_to_hitl(state: ClaimState) -> ClaimState:
     """Add claim to HITL queue for human review."""
     print(f"[Node] add_to_hitl: {state.get('claim_id')} — {state.get('hitl_reason')}")
@@ -422,54 +492,29 @@ def node_file_claim(state: ClaimState) -> ClaimState:
     classification = state["classification"]
     carrier        = classification.get("carrier", "FedEx")
 
-    result = send_claim_email(
-        to          = "",  # resolved by get_target_email inside MCP
-        subject     = state["draft_subject"],
-        body        = state["draft_body"],
-        claim_id    = state["claim_id"],
-        carrier     = carrier,
-        tracking_id = order["track_id"],
-    )
-
-    if result.get("success"):
-        # Save draft to DB
-        session = get_session()
-        try:
-            claim = session.query(Claim).filter(
-                Claim.claim_id == state["claim_id"]
-            ).first()
-            if claim:
-                claim.draft_email_text = state["draft_body"]
-                claim.gmail_thread_id  = result.get("thread_id")
-                claim.filed            = True
-                claim.filed_at         = datetime.now()
-                claim.status           = "filed"
-                session.commit()
-        finally:
-            session.close()
-
-        return {
-            **state,
-            "thread_id": result.get("thread_id"),
-            "filed":     True,
-        }
-
+    # Resolve correct email target from config
+    email_env  = _cfg.get("email", {}).get("env", "test")
+    test_addr  = _cfg.get("email", {}).get("test_address", "")
+    if email_env == "test":
+        to_addr = test_addr
     else:
-        # Email send failed — log error
-        session = get_session()
-        try:
-            error_log = ErrorLog(
-                tracking_id = order["track_id"],
-                error_type  = "DRAFT_PENDING_SEND",
-                stage       = "filing",
-                details     = result.get("error", "Send failed"),
-            )
-            session.add(error_log)
-            session.commit()
-        finally:
-            session.close()
+        to_addr = "support@shippo.com" if "UPS" in carrier.upper() else "file.claim@fedex.com"
 
-        return {**state, "filed": False, "error": "DRAFT_PENDING_SEND"}
+    # In auto_send, queue for paced sending instead of immediate send
+    session = get_session()
+    try:
+        claim = session.query(Claim).filter(
+            Claim.claim_id == state["claim_id"]
+        ).first()
+        if claim:
+            claim.draft_email_text = state["draft_body"]
+            claim.status           = "queued_to_send"
+            claim.updated_at       = datetime.now()
+            session.commit()
+    finally:
+        session.close()
+    print(f"[Node] file_claim: auto_send — queued for paced sending (to: {to_addr})")
+    return {**state, "filed": False, "thread_id": None}
 
 
 # ── ROUTING FUNCTIONS ─────────────────────────────────────────────
@@ -559,6 +604,7 @@ def build_pipeline():
     graph.add_node("assess_eligibility",  node_assess_eligibility)
     graph.add_node("save_to_db",          node_save_to_db)
     graph.add_node("add_to_hitl",         node_add_to_hitl)
+    graph.add_node("generate_reasoning",  node_generate_reasoning)
     graph.add_node("draft_claim",         node_draft_claim)
     graph.add_node("file_claim",          node_file_claim)
 
@@ -603,12 +649,14 @@ def build_pipeline():
         }
     )
 
-    # After save_to_db — check if HITL or draft
+    # After save_to_db — check if HITL or reasoning+draft
     graph.add_conditional_edges(
         "save_to_db",
-        lambda s: "hitl" if s.get("needs_hitl") else "draft",
-        {"hitl": "add_to_hitl", "draft": "draft_claim"}
+        lambda s: "hitl" if s.get("needs_hitl") else "reasoning",
+        {"hitl": "add_to_hitl", "reasoning": "generate_reasoning"}
     )
+
+    graph.add_edge("generate_reasoning", "draft_claim")
 
     graph.add_edge("add_to_hitl", END)
 

@@ -17,9 +17,9 @@
   },
   "claim_amount": 100.0,
   "email": {
-    "mode": "manual",
     "env": "test",
     "test_address": "praveen.prakash.82@gmail.com",
+    "mode": "auto_send",
     "sender": "praveenp.1118@gmail.com"
   },
   "scheduler": {

@@ -115,7 +115,13 @@ def fetch_orders_for_date(fetch_date: str) -> Optional[list]:
         )
         if response.status_code == 200:
             data   = response.json()
-            orders = data if isinstance(data, list) else data.get("data", [])
+            # API returns [{"status":..., "data":[...orders...]}]
+            if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and "data" in data[0]:
+                orders = data[0].get("data", [])
+            elif isinstance(data, dict):
+                orders = data.get("data", [])
+            else:
+                orders = data if isinstance(data, list) else []
             print(f"[Scheduler] {fetch_date}: {len(orders)} orders")
             return orders
         else:
@@ -154,7 +160,7 @@ def overwrite_orders_for_date(orders: list, fetch_date: str) -> int:
         inserted = 0
         for o in orders:
             session.add(Order(
-                partner_order_id = str(o.get("partner_order_id", "")),
+                partner_order_id = str(o.get("partner_order_id") or o.get("tracking_id") or o.get("order_id", "UNKNOWN")),
                 tracking_id      = str(o.get("track_id", "")),
                 ship_method      = str(o.get("ship_method", "")),
                 ship_date        = str(o.get("ship_date", fetch_date)),
@@ -210,18 +216,13 @@ def refresh_mcp_for_date(fetch_date: str, orders: list) -> int:
 
             # Order API says delivered → update cache, no MCP needed
             if "delivered" in last_status:
-                if cache:
-                    cache.cached_status      = order.get("last_track_status", "Delivered")
-                    cache.cached_status_date = order.get("last_track_status_date", "")
-                    cache.source             = "order_api"
-                else:
-                    session.add(TrackingCache(
-                        tracking_id        = track_id,
-                        carrier            = detect_carrier(track_id, ship_method),
-                        cached_status      = order.get("last_track_status", "Delivered"),
-                        cached_status_date = order.get("last_track_status_date", ""),
-                        source             = "order_api",
-                    ))
+                session.merge(TrackingCache(
+                    tracking_id        = track_id,
+                    carrier            = detect_carrier(track_id, ship_method),
+                    cached_status      = order.get("last_track_status", "Delivered"),
+                    cached_status_date = order.get("last_track_status_date", ""),
+                    source             = "order_api",
+                ))
                 session.commit()
                 continue
 
@@ -234,27 +235,22 @@ def refresh_mcp_for_date(fetch_date: str, orders: list) -> int:
                 history    = result.get("history", [])
                 mcp_calls += 1
 
-                if cache:
-                    cache.cached_status      = status
-                    cache.cached_status_date = status_date
-                    cache.full_history_json  = json.dumps(history)
-                    cache.last_mcp_call      = datetime.now()
-                    cache.source             = "mcp"
-                else:
-                    session.add(TrackingCache(
-                        tracking_id        = track_id,
-                        carrier            = detect_carrier(track_id, ship_method),
-                        cached_status      = status,
-                        cached_status_date = status_date,
-                        full_history_json  = json.dumps(history),
-                        last_mcp_call      = datetime.now(),
-                        source             = "mcp",
-                    ))
+                session.merge(TrackingCache(
+                    tracking_id        = track_id,
+                    carrier            = detect_carrier(track_id, ship_method),
+                    cached_status      = status,
+                    cached_status_date = status_date,
+                    full_history_json  = json.dumps(history),
+                    last_mcp_call      = datetime.now(),
+                    source             = "mcp",
+                ))
                 session.commit()
 
             except Exception as e:
+                session.rollback()
                 print(f"[Scheduler] MCP error {track_id}: {e}")
                 log_error("MCP_TIMEOUT", "refresh_mcp", str(e), track_id)
+
 
         return mcp_calls
     finally:
@@ -304,6 +300,8 @@ def run_daily_pipeline():
         else:
             overwrite_orders_for_date(orders, fetch_date)
             mcp_calls    = refresh_mcp_for_date(fetch_date, orders)
+            from scheduler.reclassify import enrich_orders_with_cache
+            orders = enrich_orders_with_cache(orders)
             result       = process_eligible_for_date(orders)
             total_orders += len(orders)
             total_mcp    += mcp_calls
@@ -315,6 +313,9 @@ def run_daily_pipeline():
             time.sleep(SLEEP_BETWEEN)
 
     print(f"\n[Daily] Done — Orders: {total_orders} | MCP: {total_mcp} | Filed: {total_filed}")
+    from scheduler.reclassify import reclassify_old_unresolved
+    reclass = reclassify_old_unresolved()
+    print(f"[Daily] Reclassified: {reclass['updated']} | Extra MCP: {reclass['mcp_calls']}")
     log_scheduler_run(
         "daily",
         (today - timedelta(days=DAY_OFFSETS[-1])).strftime("%Y-%m-%d"),
@@ -397,11 +398,31 @@ def run_hourly_response_poll():
                             "attempt_number": claim.attempt_number,
                             "prior_claim_ids": [claim.claim_id],
                         })
-                        send_claim_email(
-                            to="", subject=resubmit["subject"], body=resubmit["body"],
-                            claim_id=claim.claim_id, carrier=claim.carrier,
-                            tracking_id=claim.tracking_id,
-                        )
+                        # Use Re: on original subject for same thread
+                        resub_subject = f"Re: Service Guarantee Claim — {claim.tracking_id}"
+                        # Append original email as quoted thread
+                        original_body = claim.draft_email_text or ""
+                        quoted_original = "\n\n--- Original Claim ---\n" + original_body if original_body else ""
+                        full_body = resubmit["body"] + quoted_original
+                        # In test mode, save as draft only; in production, auto-send
+                        cfg = json.loads(open('config/system_config.json').read())
+                        email_env = cfg.get('email', {}).get('env', 'test')
+                        test_addr = cfg.get('email', {}).get('test_address', '')
+                        if email_env == 'test':
+                            # Save draft to DB, don't send
+                            claim.draft_email_text = full_body
+                            claim.status = "draft_pending_send"
+                            claim.attempt_number += 1
+                            session.commit()
+                            print(f"[Hourly] Resubmission draft saved for {claim.tracking_id} (test mode)")
+                        else:
+                            # Production — auto-send to correct target
+                            to_addr = "support@shippo.com" if "UPS" in claim.carrier.upper() else "file.claim@fedex.com"
+                            send_claim_email(
+                                to=to_addr, subject=resub_subject, body=full_body,
+                                claim_id=claim.claim_id, carrier=claim.carrier,
+                                tracking_id=claim.tracking_id,
+                            )
 
                 elif classification == "MORE_INFO":
                     claim.status = "more_info_needed"
@@ -467,6 +488,80 @@ def run_manual(start_date: str, end_date: str) -> dict:
 
 # ── SCHEDULER SETUP ───────────────────────────────────────────────
 
+
+def run_paced_sender():
+    """
+    Send queued claim emails at human-like pace.
+    Picks up claims with status='queued_to_send' or 'draft_pending_send' (in auto_send mode).
+    Sends 2-3 emails, then waits for next scheduler interval.
+    Called every 30 minutes by APScheduler.
+    """
+    import json
+    try:
+        with open("config/system_config.json") as f:
+            cfg = json.load(f)
+        email_mode = cfg.get("email", {}).get("mode", "manual")
+        email_env = cfg.get("email", {}).get("env", "test")
+        test_addr = cfg.get("email", {}).get("test_address", "")
+    except Exception:
+        email_mode = "manual"
+        email_env = "test"
+        test_addr = ""
+
+    if email_mode != "auto_send":
+        return
+
+    session = get_session()
+    try:
+        queued = session.query(Claim).filter(
+            Claim.status.in_(["queued_to_send", "draft_pending_send"])
+        ).order_by(Claim.created_at).limit(3).all()
+
+        if not queued:
+            return
+
+        from mcp_servers.email_claims_mcp import send_claim_email
+
+        print(f"\n[Paced Sender] Sending {len(queued)} emails...")
+        for claim in queued:
+            carrier = claim.carrier or "FedEx"
+            subject = f"Service Guarantee Claim — {claim.tracking_id}"
+
+            if email_env == "test":
+                to_addr = test_addr
+            else:
+                to_addr = "support@shippo.com" if "UPS" in carrier.upper() else "file.claim@fedex.com"
+
+            result = send_claim_email(
+                to=to_addr,
+                subject=subject,
+                body=claim.draft_email_text or "",
+                claim_id=claim.claim_id,
+                carrier=carrier,
+                tracking_id=claim.tracking_id,
+                cc="logistics@arabellabouquets.com",
+            )
+
+            if result.get("success"):
+                claim.status = "filed"
+                claim.filed = True
+                claim.filed_at = datetime.now()
+                session.commit()
+                print(f"[Paced Sender] Sent: {claim.tracking_id}")
+            else:
+                print(f"[Paced Sender] Failed: {claim.tracking_id} — {result.get('error')}")
+
+            # Small delay between sends (10 seconds)
+            time.sleep(10)
+
+        print(f"[Paced Sender] Done — {len(queued)} processed")
+
+    except Exception as e:
+        session.rollback()
+        print(f"[Paced Sender] Error: {e}")
+    finally:
+        session.close()
+
 def create_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler()
 
@@ -476,6 +571,12 @@ def create_scheduler() -> BackgroundScheduler:
         id="daily_pipeline", name="Daily Pipeline (midnight PST)",
         replace_existing=True,
     )
+    scheduler.add_job(
+        run_paced_sender,
+        IntervalTrigger(minutes=30),
+        id="paced_sender", name="Paced Email Sender (every 30 min)",
+    )
+
     scheduler.add_job(
         run_hourly_response_poll,
         IntervalTrigger(hours=1),
@@ -566,3 +667,6 @@ if __name__ == "__main__":
         except (KeyboardInterrupt, SystemExit):
             scheduler.shutdown()
             print("[Scheduler] Stopped.")
+
+
+# ── PACED EMAIL SENDER ────────────────────────────────────────────

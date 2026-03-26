@@ -57,7 +57,7 @@ Claim amount: $100.00
 Reference: FedEx Money-Back Guarantee
 
 Regards,
-BloomDirect Logistics Team
+REBLOOM Logistics
 """,
         "DAMAGE": """
 Example approved claim (FedEx - Damage):
@@ -83,7 +83,7 @@ this damage claim.
 Claim amount: $100.00
 
 Regards,
-BloomDirect Logistics Team
+REBLOOM Logistics
 """
     },
     "UPS": {
@@ -115,7 +115,7 @@ charges.
 Claim amount: $100.00
 
 Regards,
-BloomDirect Logistics Team
+REBLOOM Logistics
 """
     }
 }
@@ -151,94 +151,107 @@ def get_claim_channel(carrier: str) -> str:
 # ── BUILD PROMPT ───────────────────────────────────────────────────
 
 def build_prompt(state: dict) -> str:
-    """Build the full prompt for the claim drafter."""
-    order          = state["validated_order"]
-    classification = state["classification"]
+    """Build evidence-based claim prompt citing carrier fault events."""
+    order          = state.get("validated_order", {})
+    classification = state.get("classification", {})
     eligibility    = state.get("eligibility", {})
-    mcp_history    = state.get("mcp_history", [])
+    mcp_history    = state.get("mcp_history") or []  # Handle None
+    attempt        = state.get("attempt_number", 1)
 
-    carrier        = classification.get("carrier", "FedEx")
-    claim_type     = classification.get("failure_type", "UNKNOWN")
-    track_id       = order["track_id"]
-    ship_date      = order["ship_date"]
-    ship_method    = order["ship_method"]
-    delay_days     = classification.get("delay_days", 0)
-    first_bad_event= classification.get("first_bad_event", "")
-    promised_date  = classification.get("promised_date", "")
-    occasion       = classification.get("occasion_type", "General")
-    attempt_number = state.get("attempt_number", 1)
-    probability    = eligibility.get("probability", 0.5)
+    track_id     = order.get("track_id", "")
+    ship_method  = order.get("ship_method", "")
+    ship_date    = order.get("ship_date", "")
+    carrier      = classification.get("carrier", "FedEx")
+    failure_type = classification.get("failure_type", "LATE")
+    delay_days   = int(classification.get("delay_days", 1) or 1)
+    promised     = classification.get("promised_date", "")
+    occasion     = classification.get("occasion_type", "General")
+    probability  = eligibility.get("probability", 0.5)
 
-    # Get few-shot example
-    example = FEW_SHOT_EXAMPLES.get(carrier, {}).get(claim_type, "")
+    # Ensure mcp_history is a list of dicts
+    if not isinstance(mcp_history, list):
+        mcp_history = []
+    sorted_history = sorted(mcp_history, key=lambda x: str(x.get("date", "")))
 
-    # Build history summary
-    history_summary = ""
-    if mcp_history:
-        history_summary = "\n".join([
-            f"  [{e.get('date', '')}] {e.get('status', '')[:80]}"
-            for e in mcp_history[:10]
-        ])
+    FAULT_KEYWORDS = [
+        "mechanical failure", "late trailer", "late flight", "missed flight",
+        "railroad mechanical", "flight cancellation", "incorrectly sorted",
+        "delay", "exception", "damage", "missing merchandise"
+    ]
+    fault_events = []
+    for event in sorted_history:
+        status = str(event.get("status", "")).lower()
+        if any(kw in status for kw in FAULT_KEYWORDS):
+            fault_events.append({
+                "date":     str(event.get("date", ""))[:16],
+                "status":   str(event.get("status", "")),
+                "location": str(event.get("location", "") or "")
+            })
 
-    # Tone instruction
-    tone = TONE_INSTRUCTIONS.get(attempt_number, TONE_INSTRUCTIONS[1])
+    history_lines = []
+    for e in sorted_history[-8:]:
+        loc = f" ({e.get('location','')})" if e.get("location") else ""
+        history_lines.append(f"  {str(e.get('date',''))[:16]} — {e.get('status','')}{loc}")
+    history_str = "\n".join(history_lines) if history_lines else "Not available"
 
-    # Policy reference
-    policy_ref    = get_policy_reference(carrier, claim_type)
-    claim_channel = get_claim_channel(carrier)
+    fault_str = ""
+    if fault_events:
+        fault_str = "Carrier-fault events:\n"
+        for e in fault_events[:3]:
+            loc = f" at {e['location']}" if e['location'] else ""
+            fault_str += f"  {e['date']}{loc}: \"{e['status']}\"\n"
 
-    prompt = f"""You are a shipping claims specialist for BloomDirect, a premium floral e-commerce company.
-Draft a professional claim email for the following shipment failure.
+    occasion_context = ""
+    if occasion and occasion != "General":
+        occasion_context = f"This was a {occasion} gift order — the delay meant the customer missed their occasion entirely."
 
-## Claim Details
+    tone = "firm and assertive" if probability >= 0.6 else "professional but persistent"
+    resubmit = f"\nNote: Attempt #{attempt} — previous claim rejected. Strengthen the argument." if attempt > 1 else ""
+    carrier_team = "UPS Claims Team" if "UPS" in carrier.upper() else f"{carrier} Claims Team"
+    guarantee    = "UPS Service Guarantee" if "UPS" in carrier.upper() else "FedEx Money-Back Guarantee"
+
+    prompt = f"""You are a shipping claims specialist writing on behalf of REBLOOM.{resubmit}
+
+Shipment:
 - Tracking ID: {track_id}
-- Carrier: {carrier}
-- Ship method: {ship_method}
-- Ship date: {ship_date}
-- Promised delivery: {promised_date}
-- Failure type: {claim_type}
-- Delay days: {delay_days}
-- First bad event in history: {first_bad_event}
-- Customer occasion: {occasion}
-- Attempt number: {attempt_number}
-- Claim amount: ${CLAIM_AMOUNT:.2f}
-- Policy reference: {policy_ref}
-- Address to: {claim_channel}
-- Approval probability: {probability:.0%}
+- Carrier: {carrier} ({ship_method})
+- Ship Date: {ship_date}
+- Promised Delivery: {promised or "next working day"}
+- Failure: {failure_type} — {delay_days} day(s) late
+- Tone: {tone}
+{occasion_context}
 
-## Tracking History
-{history_summary if history_summary else "Full history available in carrier system"}
+Tracking history:
+{history_str}
 
-## Tone Instructions
-{tone}
+{fault_str}
 
-## Few-Shot Example (approved claim in similar situation)
-{example if example else "No example available for this claim type"}
+Write the claim email:
 
-## Chain-of-Thought Instructions
-Before writing the email, reason through:
-1. What is the specific carrier fault? Which tracking event proves it?
-2. Which policy clause exactly applies?
-3. What evidence is most compelling from the history?
-4. How should the {occasion} occasion be mentioned? (use generic language only, never personal details)
-5. What tone is right for attempt {attempt_number}?
+1. Details block:
+Tracking ID:   {track_id}
+Ship Date:     {ship_date}
+Delay:         {delay_days} day(s) past promised date
+Reason:        [short reason citing first fault event]
+{"Occasion:      " + occasion if occasion and occasion != "General" else ""}
 
-## Output Requirements
-Return ONLY a valid JSON object with these exact fields:
-{{
-  "subject": "Claim Request — Track ID: {track_id} — {claim_type}",
-  "body": "full email body text here",
-  "policy_reference": "{policy_ref}",
-  "confidence_score": 0.0
-}}
+---
 
-Do not include any text before or after the JSON object.
-"""
+2. ONE firm paragraph (4-5 sentences):
+   - State guaranteed vs actual delivery dates explicitly
+   - Cite specific fault event by date, location, exact status text (if available)
+   - State this is carrier-side failure — not weather or shipper error
+   - {occasion_context if occasion_context else "State the business impact"}
+   - Demand full refund under {guarantee}, expect response within 5 business days
+
+3. Sign off:
+Regards,
+REBLOOM Logistics
+
+Rules: Address to {carrier_team}. Cite their own data. Firm not passive. No subject line. No markdown. Under 200 words."""
 
     return prompt
 
-
-# ── MAIN DRAFTER FUNCTION ─────────────────────────────────────────
 
 def draft_claim_email(state: dict) -> dict:
     """
@@ -269,22 +282,32 @@ def draft_claim_email(state: dict) -> dict:
 
         raw_text = response.content[0].text.strip()
 
-        # Parse JSON response
-        # Strip markdown code blocks if present
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-        raw_text = raw_text.strip()
+        # Try to parse as JSON first (in case LLM returns structured response)
+        try:
+            clean_text = raw_text
+            if clean_text.startswith("```"):
+                clean_text = clean_text.split("```")[1]
+                if clean_text.startswith("json"):
+                    clean_text = clean_text[4:]
+                clean_text = clean_text.strip()
+            draft = json.loads(clean_text)
+            print(f"[Claim Drafter] Draft generated (JSON). Confidence: {draft.get('confidence_score', 0):.0%}")
+            return draft
+        except (json.JSONDecodeError, IndexError):
+            pass
 
-        draft = json.loads(raw_text)
-
-        print(f"[Claim Drafter] Draft generated. Confidence: {draft.get('confidence_score', 0):.0%}")
-        return draft
+        # LLM returned plain text email — use it directly (this is the normal case)
+        print(f"[Claim Drafter] Draft generated (plain text)")
+        policy_ref = get_policy_reference(carrier, claim_type)
+        return {
+            "subject": f"Service Guarantee Claim — {track_id}",
+            "body": raw_text,
+            "policy_reference": policy_ref,
+            "confidence_score": 0.7,
+        }
 
     except json.JSONDecodeError as e:
-        print(f"[Claim Drafter] JSON parse error: {e}")
-        # Return fallback draft
+        print(f"[Claim Drafter] Unexpected JSON error: {e}")
         return build_fallback_draft(state)
 
     except Exception as e:
@@ -310,24 +333,19 @@ def build_fallback_draft(state: dict) -> dict:
     if occasion and occasion != "General":
         occasion_line = f"\nThis shipment was intended for a {occasion.lower()} occasion, making the delay particularly impactful for our customer.\n"
 
-    body = f"""Dear {carrier} Claims Team,
+    body = f"""Tracking ID:   {track_id}
+Ship Date:     {ship_date}
+Delay:         {delay_days} day(s) past promised date
+Reason:        {claim_type}{f" — {event[:60]}" if event else ""}
 
-I am filing a claim for shipment {track_id} under the {policy_ref}.
+---
 
-Shipment Details:
-- Tracking number: {track_id}
-- Ship date: {ship_date}
-- Service: {ship_method}
-- Failure type: {claim_type}
-{f'- Delay: {delay_days} day(s) past guaranteed delivery' if delay_days else ''}
-{f'- Documented failure event: {event}' if event else ''}
-{occasion_line}
-Per the {policy_ref}, we respectfully request a full refund of shipping charges for this service failure.
+Dear {carrier} Claims Team,
 
-Claim amount: ${CLAIM_AMOUNT:.2f}
+Shipment {track_id} was shipped on {ship_date} under {ship_method} with a guaranteed delivery that was missed by {delay_days} day(s).{f" Your tracking records confirm a carrier-side failure that directly caused this delay: {event}" if event else ""} This constitutes a breach of the {policy_ref} attributable to {carrier} operations, not weather or shipper error. We formally request a full refund of all shipping charges and expect confirmation within 5 business days.
 
 Regards,
-BloomDirect Logistics Team"""
+REBLOOM Logistics"""
 
     return {
         "subject":          f"Claim Request — Track ID: {track_id} — {claim_type}",

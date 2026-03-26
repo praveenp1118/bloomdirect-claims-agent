@@ -18,6 +18,10 @@ services:
       - ./database:/app/database
     environment:
       - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=sqlite:////app/data/bloomdirect.db
+    env_file:
+      - .env
     restart: unless-stopped
     depends_on:
       - scheduler
@@ -29,7 +33,6 @@ services:
     volumes:
       - ./data:/app/data
       - ./.env:/app/.env
-      - ./dashboard:/app/dashboard
       - ./agents:/app/agents
       - ./orchestrator:/app/orchestrator
       - ./scheduler:/app/scheduler
@@ -39,4 +42,8 @@ services:
       - ./database:/app/database
     environment:
       - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=sqlite:////app/data/bloomdirect.db
+    env_file:
+      - .env
     restart: unless-stopped

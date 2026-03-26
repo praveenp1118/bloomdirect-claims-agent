@@ -30,8 +30,8 @@ CLAIM_AMOUNT = CONFIG.get("claim_amount", 100.0)
 FILING_WINDOW= CONFIG.get("filing_window_days", 15)
 FOLLOWUP_DAY = CONFIG.get("followup_day", 14)
 
-PROB_HIGH    = CONFIG["probability_thresholds"]["auto_resubmit_high"]
-PROB_LOW     = CONFIG["probability_thresholds"]["auto_resubmit_low"]
+PROB_HIGH    = CONFIG.get("probability_thresholds", {}).get("auto_resubmit", 0.6)
+PROB_LOW     = CONFIG.get("probability_thresholds", {}).get("human_review", 0.3)
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
@@ -112,43 +112,28 @@ def build_resubmission_prompt(state: dict, rejection_analysis: dict) -> str:
     if occasion and occasion != "General":
         occasion_text = f"Customer occasion: {occasion} — time-sensitive delivery"
 
-    return f"""You are a shipping claims specialist drafting a resubmission email.
+    return f"""You are a shipping claims specialist. Write a CONCISE resubmission (under 150 words).
 
-## Claim Details
+Context:
 - Tracking ID: {track_id}
-- Carrier: {carrier}
-- Claim type: {claim.get('claim_type', 'UNKNOWN')}
-- Failure event: {claim.get('first_bad_event', '')}
-- Attempt number: {attempt}
-- {prior_ids_text}
-- {occasion_text}
-
-## Original Rejection Reason
-{rejection}
-
-## Rejection Analysis
-- Can be challenged: {rejection_analysis.get('can_challenge', True)}
+- Carrier: {carrier}, Claim type: {claim.get('claim_type', 'UNKNOWN')}
+- Attempt #{attempt}. Rejection reason: {rejection}
 - Counter-argument: {rejection_analysis.get('counter_argument', '')}
-- Additional evidence to emphasize: {rejection_analysis.get('additional_evidence', '')}
+- Additional evidence: {rejection_analysis.get('additional_evidence', '')}
 
-## Original Email (for reference)
-{original_body[:500]}...
+Format EXACTLY like this (one paragraph, no headers, no bullets, no legal language, NO threats of escalation/regulatory/legal action):
 
-## Tone Instructions
-{tone}
+Dear {carrier} Claims Team,
 
-## Requirements
-- Reference the prior rejection explicitly
-- Challenge the rejection reason with tracking evidence
-- {f"Mention {occasion.lower()} occasion impact" if occasion != "General" else ""}
-- Claim amount: ${CLAIM_AMOUNT:.2f}
-- Policy: {policy_ref}
-- {prior_ids_text}
+[ONE firm paragraph: reference prior rejection, challenge it with tracking evidence, state carrier fault, demand refund under {policy_ref}. Max 150 words.]
+
+Regards,
+REBLOOM Logistics
 
 Return ONLY valid JSON:
 {{
-  "subject": "Resubmission — Claim Ref: {prior_ids[-1] if prior_ids else 'N/A'} — Track ID: {track_id}",
-  "body": "full resubmission email body",
+  "subject": "Re: Service Guarantee Claim — {track_id}",
+  "body": "Dear [carrier] Claims Team,\n\n[paragraph]\n\nRegards,\nREBLOOM Logistics",
   "policy_reference": "{policy_ref}",
   "confidence_score": 0.0
 }}"""

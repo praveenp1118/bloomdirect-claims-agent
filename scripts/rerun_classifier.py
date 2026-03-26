@@ -56,7 +56,7 @@ for o in orders:
     last_status_date = cache.cached_status_date if cache else ""
 
     order_dicts.append({
-        "partner_order_id":        o.partner_order_id,
+        "partner_order_id":        o.partner_order_id or o.tracking_id or "UNKNOWN",
         "track_id":                o.tracking_id,
         "ship_method":             o.ship_method,
         "ship_date":               o.ship_date,

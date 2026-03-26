@@ -36,7 +36,7 @@ PASSIVE_PATTERNS = [
 
 # PII patterns to detect raw personal data
 PII_PATTERNS = [
-    r"\b[A-Z][a-z]+\s+[A-Z][a-z]+\b",  # Full names (basic)
+    # Full name pattern removed — too aggressive, redacts carrier names and dates
     r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b",  # Phone numbers
     r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",  # Emails
     r"\b\d{1,5}\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Blvd)\b",  # Addresses
