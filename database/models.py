@@ -91,6 +91,7 @@ class Claim(Base):
     occasion_type    = Column(String(20), default="General")
     filed            = Column(Boolean, default=False)
     filed_at         = Column(DateTime)
+    fedex_batch_id   = Column(String(30))
     created_at       = Column(DateTime, default=func.now())
     updated_at       = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -176,6 +177,18 @@ class SchedulerState(Base):
     records_processed = Column(Integer, default=0)
     completed_at      = Column(DateTime)
     created_at        = Column(DateTime, default=func.now())
+
+
+# ── TABLE 10: FEDEX BATCHES ────────────────────────────────────────
+class FedExBatch(Base):
+    __tablename__ = "fedex_batches"
+
+    batch_id     = Column(String(30), primary_key=True)
+    created_at   = Column(DateTime, default=func.now())
+    claim_count  = Column(Integer, default=0)
+    status       = Column(String(20), default="ready")    # ready / filed / discarded
+    fedex_ref_id = Column(String(100))
+    notes        = Column(Text)
 
 
 # ── DB UTILITIES ──────────────────────────────────────────────────

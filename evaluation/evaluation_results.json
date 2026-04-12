@@ -1,0 +1,317 @@
+{
+  "run_timestamp": "2026-04-12T10:20:22.710032",
+  "model_judge": "claude-sonnet-4-6",
+  "total_scenarios": 15,
+  "passed": 13,
+  "failed": 2,
+  "pass_rate": "87%",
+  "dimension_averages": {
+    "tone_appropriateness": 3.6,
+    "factual_accuracy": 4.13,
+    "completeness": 3.47,
+    "actionability": 4.07,
+    "overall": 3.82
+  },
+  "results": [
+    {
+      "id": "EV-001",
+      "category": "UPS Late \u2014 First Attempt",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 3,
+        "completeness": 4,
+        "actionability": 5,
+        "overall": 4.0,
+        "reasoning": "The tone is professional and courteous, appropriate for a first attempt without being aggressive or overly demanding. However, the email is addressed to 'Shippo Claims Team' rather than UPS directly, which is a factual/contextual mismatch given the carrier is UPS \u2014 this raises accuracy concerns, and the tracking summary includes a 'March 19: Delivery attempted \u2014 no access' entry that is not supported by the claim context, potentially undermining credibility. Completeness and actionability are strong, with a clear dollar amount, policy reference, tracking timeline, and an explicit reimbursement request.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "UPS",
+        "failure_type": "LATE",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-002",
+      "category": "UPS Late \u2014 First Attempt",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 4,
+        "completeness": 4,
+        "actionability": 4,
+        "overall": 4.0,
+        "reasoning": "The email is professionally written, carrier-appropriate, and includes all core facts \u2014 tracking number, ship date, guaranteed delivery date, actual delivery date, and delay duration. It proactively acknowledges the weather delay while correctly noting that exemptions must meet specific criteria, which strengthens the claim. The specific refund amount is clearly stated and a review is requested, though the actionability could be marginally sharper with an explicit next-step deadline or preferred resolution method.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "UPS",
+        "failure_type": "LATE",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-003",
+      "category": "UPS Late \u2014 First Attempt",
+      "scores": {
+        "tone_appropriateness": 1,
+        "factual_accuracy": 4,
+        "completeness": 2,
+        "actionability": 3,
+        "overall": 2.5,
+        "reasoning": "The tone is overly aggressive and legalistic for a first-attempt claim on a minor 1-day delay \u2014 phrases like 'hereby formally demand' and 'unacceptable service' are disproportionate and likely to antagonize the carrier representative. While the tracking number and claim amount are correctly referenced, the email lacks critical supporting details such as the promised delivery date, actual delivery date, service guarantee policy citation, and any mention of supporting documentation. The resolution ask includes a dollar amount but lacks a specific preferred resolution method (credit, check, etc.) and the 5-business-day ultimatum is inappropriate for attempt number 1.",
+        "pass": false,
+        "failure_mode": "Tone is combative and disproportionate for a first-attempt, low-value late claim; email is missing key completeness fields including promised vs. actual delivery dates and policy reference, undermining credibility and actionability."
+      },
+      "input_summary": {
+        "carrier": "UPS",
+        "failure_type": "LATE",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-004",
+      "category": "UPS Late \u2014 First Attempt",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 4.0,
+        "reasoning": "The email is professionally written with a warm, non-demanding tone appropriate for a first attempt, and all factual details (tracking number, ship date, guaranteed date, actual delivery date, delay days, and claim amount) precisely match the provided context. However, completeness is middling as the email lacks explicit reference to any supporting documentation (e.g., invoice, proof of payment) and does not clearly specify a desired resolution timeline or next step beyond a vague offer to provide more information. Actionability is strong given the specific dollar amount is stated, though the ask for reimbursement could be more direct with a clear call to action.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "UPS",
+        "failure_type": "LATE",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-005",
+      "category": "FedEx Damage",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 4,
+        "actionability": 4,
+        "overall": 4.25,
+        "reasoning": "The email is professionally written, accurately references all key facts from the claim context including tracking number, dates, ship method, and claim amount. It includes a policy reference and describes the product type, though supporting documentation is offered rather than attached, and a specific next step (e.g., expected response timeframe or claims portal submission) is not explicitly outlined. For a first-attempt claim, the tone strikes a good balance \u2014 respectful and clear without being demanding.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "FedEx",
+        "failure_type": "DAMAGE",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-006",
+      "category": "FedEx Damage",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 3,
+        "actionability": 3,
+        "overall": 3.75,
+        "reasoning": "The email is professional, warm, and appropriately structured for a first-attempt damage claim, accurately reflecting all provided context including tracking number, ship method, date, and claim amount. However, it lacks a FedEx-specific policy reference (e.g., citing FedEx's declared value or damage claim process), and the resolution ask is somewhat vague \u2014 requesting 'guidance on the fastest resolution path' rather than explicitly requesting reimbursement of $149.99 within a defined timeframe or via a specific channel. Supporting evidence (photos, invoice) is offered but not confirmed as attached.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "FedEx",
+        "failure_type": "DAMAGE",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-007",
+      "category": "FedEx Damage",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 4,
+        "actionability": 4,
+        "overall": 4.25,
+        "reasoning": "The email is professional, accurate, and includes all key facts \u2014 tracking number, ship date, amount, and failure type \u2014 with a clear reimbursement request. The tone is appropriate for a first attempt, avoiding aggression while remaining assertive. Completeness is slightly below perfect as documentation is listed but not explicitly attached or described in detail, and no specific next-step deadline or claims portal reference is provided.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "FedEx",
+        "failure_type": "DAMAGE",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-008",
+      "category": "Carrier Delay \u2014 Mechanical",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 4,
+        "completeness": 4,
+        "actionability": 5,
+        "overall": 4.25,
+        "reasoning": "The email is professionally written, appropriately firm without being aggressive, and well-suited for a first attempt. All core facts align with the claim context \u2014 tracking number, ship method, dates, delay duration, and claim amount are accurate, though the subject line references 'Mechanical Failure' which is a reasonable inference but not explicitly provided in the context. The claim includes a policy reference (UPS Service Guarantee), a specific cause (trailer breakdown), and a precise reimbursement amount with a clear ask, making it highly actionable.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "UPS",
+        "failure_type": "CARRIER_DELAY",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-009",
+      "category": "Carrier Delay \u2014 Mechanical",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 4,
+        "actionability": 5,
+        "overall": 4.5,
+        "reasoning": "The draft is professional, factually precise, and matches all provided context including tracking number, ship method, dates, delay duration, and claim amount. The phrase 'entirely within FedEx's operational control' edges slightly toward assertive rather than warm, and supporting evidence (e.g., proof of payment, screenshots) is referenced implicitly but not listed as attachments. The actionability is strong with a specific dollar amount and a clear policy-based reimbursement request.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "FedEx",
+        "failure_type": "CARRIER_DELAY",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-010",
+      "category": "Carrier Delay \u2014 Mechanical",
+      "scores": {
+        "tone_appropriateness": 3,
+        "factual_accuracy": 4,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 3.5,
+        "reasoning": "The email is professional and concise, with accurate tracking, dates, and claim amount, though the ship date (March 20) and guaranteed delivery (March 26) suggest a 6-day transit window rather than a typical UPS Ground window, which could be flagged. It lacks a policy or SLA reference and does not include supporting evidence such as tracking screenshots or invoice documentation. The claim amount and reimbursement ask are clear, but the next-step request is implicit rather than explicitly stated.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "UPS",
+        "failure_type": "CARRIER_DELAY",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-011",
+      "category": "Rejection Resubmission \u2014 Firm Tone",
+      "scores": {
+        "tone_appropriateness": 3,
+        "factual_accuracy": 2,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 3.0,
+        "reasoning": "The email misidentifies the ship method as 'UPS Ground SLA' when the context specifies UPS_2DAY, which is a material factual error that could undermine the claim. The tone is professional and appropriate for a second attempt but leans generic rather than carrier-specific or warmly accountable. Completeness is adequate with tracking ID, dates, and amount present, but lacks a specific UPS Service Guarantee policy citation; actionability is strong with a clear dollar amount and escalation request.",
+        "pass": false,
+        "failure_mode": "Factual accuracy failure: the draft incorrectly references 'UPS Ground SLA' instead of the correct UPS 2-Day Air service guarantee, which could cause the resubmission to be denied on the same or new grounds. Overall score of 3.0 falls below the 3.5 passing threshold."
+      },
+      "input_summary": {
+        "carrier": "UPS",
+        "failure_type": "LATE",
+        "attempt_number": 2,
+        "tone_requested": "firm"
+      }
+    },
+    {
+      "id": "EV-012",
+      "category": "Rejection Resubmission \u2014 Firm Tone",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 5,
+        "actionability": 5,
+        "overall": 4.75,
+        "reasoning": "The draft is professionally firm and appropriate for a second attempt resubmission, avoiding aggressive language while maintaining assertiveness. All factual details \u2014 tracking number, ship method, guaranteed and actual delivery dates, delay duration, and claim amount \u2014 precisely match the provided context. The email is complete with enumerated supporting documents and a policy reference, and the actionability is strong with a specific dollar amount and a clear reconsideration request.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "FedEx",
+        "failure_type": "LATE",
+        "attempt_number": 2,
+        "tone_requested": "firm"
+      }
+    },
+    {
+      "id": "EV-013",
+      "category": "Rejection Resubmission \u2014 Firm Tone",
+      "scores": {
+        "tone_appropriateness": 3,
+        "factual_accuracy": 4,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 3.5,
+        "reasoning": "The tone is professional and appropriately firm for a second attempt, but lacks warmth or any acknowledgment of the prior denial, which would strengthen the resubmission framing. Factual accuracy is strong \u2014 tracking number, dates, and amount align with the claim context, though the 15-day UPS filing window reference could be tied to a specific UPS policy document or citation for added credibility. Completeness covers the core fields but is missing supporting evidence references (e.g., original submission confirmation, ship date documentation) and a specific next-step deadline or escalation path.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "UPS",
+        "failure_type": "CARRIER_DELAY",
+        "attempt_number": 2,
+        "tone_requested": "firm"
+      }
+    },
+    {
+      "id": "EV-014",
+      "category": "Weather Delay \u2014 Low Probability",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 3,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 3.5,
+        "reasoning": "The tone is professional and appropriately measured for a first attempt, acknowledging the force majeure complexity without being aggressive or overly demanding. Factual accuracy is mostly solid \u2014 tracking number, ship method, delay days, and amount are correct \u2014 but the subject line references 'Weather Delay' while the claim context only specifies CARRIER_DELAY, which may be an unverified assumption that could undermine the claim. Completeness is adequate with core fields present and a policy reference, but lacks supporting evidence (e.g., screenshots, delivery confirmation, order date) and a specific refund mechanism or timeline ask.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "UPS",
+        "failure_type": "CARRIER_DELAY",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    },
+    {
+      "id": "EV-015",
+      "category": "Weather Delay \u2014 Low Probability",
+      "scores": {
+        "tone_appropriateness": 4,
+        "factual_accuracy": 4,
+        "completeness": 3,
+        "actionability": 3,
+        "overall": 3.5,
+        "reasoning": "The tone is professional and appropriately measured for a first attempt, acknowledging the weather caveat while still asserting the claim \u2014 avoiding both aggression and excessive deference. All core facts (tracking number, ship method, date, delay duration, amount) are accurately represented, though FedEx Ground's standard service guarantee exclusions for weather are not explicitly addressed, and no FedEx policy citation or supporting evidence (e.g., delivery confirmation, invoice) is referenced. The claim amount is clearly stated, but the resolution request is vague \u2014 there is no explicit ask for a refund, credit, or specific next step from FedEx.",
+        "pass": true,
+        "failure_mode": null
+      },
+      "input_summary": {
+        "carrier": "FedEx",
+        "failure_type": "CARRIER_DELAY",
+        "attempt_number": 1,
+        "tone_requested": "professional"
+      }
+    }
+  ]
+}

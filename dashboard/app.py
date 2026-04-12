@@ -287,7 +287,7 @@ def q_l1() -> pd.DataFrame:
                                 THEN tc.tracking_id END)                      AS mcp1_calls,
             COUNT(DISTINCT CASE WHEN el2.direction = 'sent'
                                 THEN el2.log_id END)                          AS mcp2_calls,
-            COUNT(DISTINCT CASE WHEN c.status = 'filed'
+            COUNT(DISTINCT CASE WHEN c.filed = 1
                                 THEN c.tracking_id END)                       AS filed,
             COUNT(DISTINCT CASE WHEN c.status = 'rejected'
                                 THEN c.tracking_id END)                       AS rejected,
@@ -2055,6 +2055,169 @@ def render_errors():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# TAB — FEDEX FILING
+# ─────────────────────────────────────────────────────────────────────────────
+
+def render_fedex_filing():
+    st.markdown(
+        "<div style='font-size:13px;font-weight:500;margin-bottom:2px;'>📦 FedEx Portal Filing</div>"
+        "<div style='font-size:11px;color:#888;margin-bottom:12px;'>"
+        "Generate batch Excel files for upload to "
+        '<a href="https://www.fedex.com/en-us/customer-support/claims.html" target="_blank">FedEx Claims Portal</a>. '
+        "Max 200 per batch. UPS claims are filed via email (separate flow).</div>",
+        unsafe_allow_html=True
+    )
+
+    import sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    try:
+        from scripts.generate_fedex_batch import (
+            get_queued_fedex_count, create_batch, generate_excel_bytes,
+            mark_batch_filed, discard_batch, get_all_batches
+        )
+    except ImportError as e:
+        st.error(f"FedEx batch module not found: {e}")
+        return
+
+    # ── Queued count + Generate ───────────────────────────────
+    queued_count = get_queued_fedex_count()
+
+    st.markdown(
+        f"<div style='background:#f8f9fa;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:13px;'>"
+        f"📋 <b>FedEx claims ready for batching:</b> {queued_count}"
+        f"</div>",
+        unsafe_allow_html=True
+    )
+
+    c1, c2 = st.columns([1, 2])
+    batch_size = c1.number_input("Claims per batch", min_value=1, max_value=200,
+                                  value=min(10, queued_count) if queued_count > 0 else 10,
+                                  key="fedex_batch_size")
+    with c2:
+        st.write("")
+        if st.button("📥 Generate Batch", key="fedex_gen_batch", type="primary",
+                      disabled=queued_count == 0):
+            with st.spinner("Creating batch..."):
+                result = create_batch(int(batch_size))
+                if result["batch_id"]:
+                    st.success(f"✅ Batch **{result['batch_id']}** created with {result['claim_count']} claims.")
+                    st.cache_data.clear()
+                    st.rerun()
+                else:
+                    st.error(f"Failed: {result.get('error', 'No queued FedEx claims')}")
+
+    st.divider()
+
+    # ── Batch History ─────────────────────────────────────────
+    st.markdown("<div style='font-size:12px;font-weight:600;color:#555;margin-bottom:8px;'>Batch History</div>",
+                unsafe_allow_html=True)
+
+    batches = get_all_batches()
+    if not batches:
+        st.info("No batches created yet. Generate one above.")
+        return
+
+    # Header row
+    h = st.columns([1.2, 1.2, 0.6, 0.8, 1.0, 1.0, 1.2])
+    for col, label in zip(h, ["Batch ID", "Created", "Claims", "Status",
+                                "FedEx Ref", "Download", "Actions"]):
+        col.markdown(f"<small><b style='color:#888;font-size:11px;'>{label}</b></small>",
+                     unsafe_allow_html=True)
+    st.markdown("<hr style='margin:3px 0;border:none;border-top:0.5px solid #ddd;'>",
+                unsafe_allow_html=True)
+
+    _BADGE = "display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;"
+    _STYLES = {
+        "ready":     ("🟡 Ready",     "background:#FAEEDA;color:#854F0B;"),
+        "filed":     ("🟢 Filed",     "background:#EAF3DE;color:#3B6D11;"),
+        "discarded": ("⚪ Discarded", "background:#F1EFE8;color:#5F5E5A;"),
+    }
+
+    for idx, batch in enumerate(batches):
+        bid    = batch["batch_id"]
+        status = batch["status"]
+        label, sty = _STYLES.get(status, ("❓", "background:#F1EFE8;color:#5F5E5A;"))
+        created = str(batch["created_at"])[:16] if batch["created_at"] else "—"
+
+        cols = st.columns([1.2, 1.2, 0.6, 0.8, 1.0, 1.0, 1.2])
+        cols[0].markdown(f"<span style='font-size:12px;font-weight:600;'>{bid}</span>",
+                         unsafe_allow_html=True)
+        cols[1].markdown(f"<span style='font-size:11px;color:#888;'>{created}</span>",
+                         unsafe_allow_html=True)
+        cols[2].markdown(f"<span style='font-size:12px;'>{batch['claim_count']}</span>",
+                         unsafe_allow_html=True)
+        cols[3].markdown(f"<span style='{_BADGE}{sty}'>{label}</span>",
+                         unsafe_allow_html=True)
+        cols[4].markdown(
+            f"<span style='font-size:11px;'>{batch['fedex_ref_id'] or '—'}</span>",
+            unsafe_allow_html=True)
+
+        # Download button
+        with cols[5]:
+            if status in ("ready", "filed"):
+                excel_data = generate_excel_bytes(bid)
+                if excel_data:
+                    st.download_button(
+                        "📥 Excel", data=excel_data,
+                        file_name=f"{bid}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key=f"dl_{bid}_{idx}",
+                    )
+            else:
+                st.markdown("<span style='font-size:11px;color:#aaa;'>—</span>",
+                            unsafe_allow_html=True)
+
+        # Actions
+        with cols[6]:
+            if status == "ready":
+                bc1, bc2 = st.columns(2)
+                with bc1:
+                    if st.button("✅ Filed", key=f"filed_{bid}_{idx}",
+                                 help="Mark as uploaded to FedEx portal"):
+                        st.session_state[f"confirm_filed_{bid}"] = True
+                        st.rerun()
+                with bc2:
+                    if st.button("❌", key=f"discard_{bid}_{idx}",
+                                 help="Discard — release claims back to queue"):
+                        result = discard_batch(bid)
+                        if result["success"]:
+                            st.toast(f"Discarded {bid} — {result['claims_released']} claims released")
+                            st.cache_data.clear()
+                            st.rerun()
+            elif status == "filed":
+                st.markdown("<span style='font-size:11px;color:#3B6D11;'>✅ Done</span>",
+                            unsafe_allow_html=True)
+            else:
+                st.markdown("<span style='font-size:11px;color:#aaa;'>—</span>",
+                            unsafe_allow_html=True)
+
+        # Confirm filed dialog
+        if st.session_state.get(f"confirm_filed_{bid}"):
+            with st.expander(f"✅ Confirm filing for {bid}", expanded=True):
+                st.markdown("Enter the FedEx reference or confirmation ID from the portal (optional):")
+                ref_id = st.text_input("FedEx Reference ID", key=f"ref_{bid}_{idx}",
+                                       placeholder="e.g., FCL-789456")
+                fc1, fc2 = st.columns(2)
+                with fc1:
+                    if st.button("Confirm Filed", key=f"cf_{bid}_{idx}", type="primary"):
+                        result = mark_batch_filed(bid, ref_id)
+                        if result["success"]:
+                            st.success(f"✅ {bid} — {result['claims_filed']} claims marked as filed")
+                            st.session_state.pop(f"confirm_filed_{bid}", None)
+                            st.cache_data.clear()
+                            st.rerun()
+                        else:
+                            st.error(f"Failed: {result.get('error')}")
+                with fc2:
+                    if st.button("Cancel", key=f"cancel_{bid}_{idx}"):
+                        st.session_state.pop(f"confirm_filed_{bid}", None)
+                        st.rerun()
+
+        st.markdown("<hr style='margin:2px 0;border:none;border-top:0.5px solid #eee;'>",
+                    unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # TAB 6 — SETTINGS
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -2103,8 +2266,37 @@ def render_settings():
     weekly_day    = c1.selectbox("Weekly full-run day", days, index=days.index(cfg["scheduler"].get("weekly_day","Monday")))
     daily_enabled = c2.checkbox("Daily not-delivered recheck", cfg["scheduler"].get("daily_enabled", True))
 
+    st.markdown("<div style='font-size:12px;font-weight:600;color:#555;margin-bottom:4px;'>🔍 Observability</div>", unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    langsmith_enabled = c1.checkbox("Enable LangSmith Tracing", cfg.get("observability", {}).get("langsmith_enabled", False))
+    if langsmith_enabled:
+        c2.markdown("<div style='font-size:11px;color:#3B6D11;margin-top:8px;'>✅ LangSmith active — traces sent to LangSmith cloud</div>", unsafe_allow_html=True)
+    else:
+        c2.markdown("<div style='font-size:11px;color:#888;margin-top:8px;'>⚪ LangSmith disabled — no tracing overhead</div>", unsafe_allow_html=True)
     st.divider()
     if st.button("💾 Save Settings", type="primary"):
+        # Save observability
+        if "observability" not in cfg:
+            cfg["observability"] = {}
+        cfg["observability"]["langsmith_enabled"] = langsmith_enabled
+        # Update .env file for LangSmith
+        import os
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+        try:
+            env_lines = open(env_path).readlines()
+            new_lines = []
+            found = False
+            for line in env_lines:
+                if line.startswith("LANGCHAIN_TRACING_V2="):
+                    new_lines.append(f"LANGCHAIN_TRACING_V2={'true' if langsmith_enabled else 'false'}\n")
+                    found = True
+                else:
+                    new_lines.append(line)
+            if not found:
+                new_lines.append(f"LANGCHAIN_TRACING_V2={'true' if langsmith_enabled else 'false'}\n")
+            open(env_path, "w").writelines(new_lines)
+        except Exception:
+            pass
         cfg["probability"]["auto_resubmit_threshold"]     = auto_thresh
         cfg["probability"]["human_review_threshold"]      = human_thresh
         cfg["retry"]["max_attempts"]                      = max_attempts
@@ -2180,12 +2372,13 @@ def main():
     st.markdown("<hr style='margin:6px 0 12px;border:none;border-top:0.5px solid #ddd;'>", unsafe_allow_html=True)
 
     # ── Tabs ─────────────────────────────────────────────────────────────────
-    tab_labels = ["📊 Dashboard", "🧑‍💼 HITL Queue", "💰 ROI Impact", "📋 Pipeline Log", "⚠️ Errors", "⚙️ Settings"]
-    t1, t2, t6, t3, t4, t5 = st.tabs(tab_labels)
+    tab_labels = ["📊 Dashboard", "🧑‍💼 HITL Queue", "💰 ROI Impact", "📦 FedEx Filing", "📋 Pipeline Log", "⚠️ Errors", "⚙️ Settings"]
+    t1, t2, t6, t7, t3, t4, t5 = st.tabs(tab_labels)
 
     with t1: render_dashboard()
     with t2: render_hitl()
     with t6: render_roi_impact()
+    with t7: render_fedex_filing()
     with t3: render_pipeline_log()
     with t4: render_errors()
     with t5: render_settings()

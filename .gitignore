@@ -60,3 +60,14 @@ credentials.json
 # ── Data (synthetic CSVs ok, real data never) ────────────────────────
 data/real_*.csv
 data/orders_*.csv
+__pycache__/
+*.pyc
+*.db
+*.sqlite
+*.pem
+*.log
+evaluation_output.txt
+system_config.json
+.DS_Store
+system_config.json
+data/bloomdirect.db

@@ -71,9 +71,12 @@ def tracking_link_html(tid: str, carrier: str = "") -> str:
 
 # ── Query ─────────────────────────────────────────────────────────
 @st.cache_data(ttl=300)
-def q_mcp1(ship_method=None, source_filter=None, delivery_filter=None) -> pd.DataFrame:
+def q_mcp1(ship_method=None, source_filter=None, delivery_filter=None, tracking_id_search=None) -> pd.DataFrame:
     clauses = ["1=1"]
     params  = {}
+    if tracking_id_search:
+        clauses.append("tc.tracking_id LIKE :tid")
+        params["tid"] = f"%{tracking_id_search}%"
     if ship_method:
         clauses.append("o.ship_method = :sm")
         params["sm"] = ship_method
@@ -143,12 +146,14 @@ if not all_df.empty:
 # Check if navigated from L1 with pre-filter
 pre_sm = st.session_state.get("mcp1_filter_sm", "")
 
-f1, f2, f3, f4 = st.columns([2, 1.5, 1.5, 1])
-sm_filter  = f1.text_input("Ship Method", value=pre_sm or "", key="mcp1_sm_input",
+f1, f2, f3, f4, f5 = st.columns([1.5, 1.5, 1.2, 1.2, 0.8])
+tid_search = f1.text_input("🔍 Tracking ID", key="mcp1_tid_search",
+                            placeholder="Enter tracking ID...")
+sm_filter  = f2.text_input("Ship Method", value=pre_sm or "", key="mcp1_sm_input",
                             placeholder="e.g. UPS Ground")
-src_filter = f2.selectbox("Source", ["All", "Live API", "Cache", "Order API"])
-del_filter = f3.selectbox("Delivery", ["All", "On Time", "Not On Time"])
-with f4:
+src_filter = f3.selectbox("Source", ["All", "Live API", "Cache", "Order API"])
+del_filter = f4.selectbox("Delivery", ["All", "On Time", "Not On Time"])
+with f5:
     st.write("")
     if st.button("✕ Clear", key="mcp1_clear"):
         st.session_state["mcp1_filter_sm"] = None
@@ -159,7 +164,7 @@ if pre_sm:
     st.info(f"🔍 Filtered to: **{pre_sm}** (from Dashboard)")
 
 # ── Data ──────────────────────────────────────────────────────────
-df = q_mcp1(sm_filter or None, src_filter, del_filter)
+df = q_mcp1(sm_filter or None, src_filter, del_filter, tid_search or None)
 
 if df.empty:
     st.info("No records match this filter.")

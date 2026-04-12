@@ -327,20 +327,21 @@ def run_daily_pipeline():
 # ── HOURLY POLL ───────────────────────────────────────────────────
 
 def run_hourly_response_poll():
+    """Hourly — check Gmail IMAP for carrier replies ONLY. No follow-ups here."""
     print(f"\n[Hourly] Polling Gmail...")
     session = get_session()
     try:
         filed_claims = session.query(Claim).filter(
             Claim.filed == True,
-            Claim.status.in_(["filed", "resubmitted"]),
+            Claim.status.in_(["filed", "resubmitted", "followup_sent", "filed_via_portal"]),
         ).all()
 
         if not filed_claims:
-            print("[Hourly] No filed claims")
+            print("[Hourly] No filed claims to check")
             return
 
         from mcp_servers.email_claims_mcp import check_email_response, send_claim_email
-        from agents.followup_escalation import process_rejection, draft_resubmission, draft_followup
+        from agents.followup_escalation import process_rejection, draft_resubmission
         from database.models import Recovery, HitlQueue
 
         for claim in filed_claims:
@@ -351,25 +352,7 @@ def run_hourly_response_poll():
                 classification = response.get("classification") if response.get("has_response") else None
 
                 if not response.get("has_response"):
-                    failure = session.query(Failure).filter(
-                        Failure.failure_id == claim.failure_id
-                    ).first()
-                    if failure and failure.ship_date:
-                        ship_d        = datetime.strptime(failure.ship_date, "%Y-%m-%d").date()
-                        days_elapsed  = (date.today() - ship_d).days
-                        days_remaining= FILING_WINDOW - days_elapsed
-                        if days_elapsed >= CONFIG.get("followup_day", 14) and claim.attempt_number == 1:
-                            followup = draft_followup(
-                                {"claim_id": claim.claim_id, "tracking_id": claim.tracking_id,
-                                 "carrier": claim.carrier, "claim_type": claim.claim_type,
-                                 "filed_at": str(claim.filed_at)},
-                                days_remaining
-                            )
-                            send_claim_email(
-                                to="", subject=followup["subject"], body=followup["body"],
-                                claim_id=claim.claim_id, carrier=claim.carrier,
-                                tracking_id=claim.tracking_id,
-                            )
+                    # No reply yet — just skip. Follow-up handled by daily job.
                     continue
 
                 if classification == "APPROVED":
@@ -398,31 +381,29 @@ def run_hourly_response_poll():
                             "attempt_number": claim.attempt_number,
                             "prior_claim_ids": [claim.claim_id],
                         })
-                        # Use Re: on original subject for same thread
                         resub_subject = f"Re: Service Guarantee Claim — {claim.tracking_id}"
-                        # Append original email as quoted thread
                         original_body = claim.draft_email_text or ""
                         quoted_original = "\n\n--- Original Claim ---\n" + original_body if original_body else ""
                         full_body = resubmit["body"] + quoted_original
-                        # In test mode, save as draft only; in production, auto-send
+                        # Read config for email target
                         cfg = json.loads(open('config/system_config.json').read())
                         email_env = cfg.get('email', {}).get('env', 'test')
                         test_addr = cfg.get('email', {}).get('test_address', '')
                         if email_env == 'test':
-                            # Save draft to DB, don't send
                             claim.draft_email_text = full_body
                             claim.status = "draft_pending_send"
                             claim.attempt_number += 1
                             session.commit()
                             print(f"[Hourly] Resubmission draft saved for {claim.tracking_id} (test mode)")
                         else:
-                            # Production — auto-send to correct target
                             to_addr = "support@shippo.com" if "UPS" in claim.carrier.upper() else "file.claim@fedex.com"
                             send_claim_email(
                                 to=to_addr, subject=resub_subject, body=full_body,
                                 claim_id=claim.claim_id, carrier=claim.carrier,
                                 tracking_id=claim.tracking_id,
                             )
+                    else:
+                        claim.status = "rejected"
 
                 elif classification == "MORE_INFO":
                     claim.status = "more_info_needed"
@@ -486,27 +467,26 @@ def run_manual(start_date: str, end_date: str) -> dict:
         return {"status": "error", "message": str(e)}
 
 
-# ── SCHEDULER SETUP ───────────────────────────────────────────────
-
+# ── PACED EMAIL SENDER ────────────────────────────────────────────
 
 def run_paced_sender():
     """
     Send queued claim emails at human-like pace.
-    Picks up claims with status='queued_to_send' or 'draft_pending_send' (in auto_send mode).
-    Sends 2-3 emails, then waits for next scheduler interval.
-    Called every 30 minutes by APScheduler.
+    Priority: urgent (≤3 days) → LLM draft + high prob → LLM draft + med prob → fallback + high → fallback + med
+    Skips probability < 0.3 and UNKNOWN failures → routes to HITL.
+    Picks top 10, sends with 10s delay. Runs every 1 hour.
     """
-    import json
     try:
-        with open("config/system_config.json") as f:
-            cfg = json.load(f)
+        cfg = json.loads(open("config/system_config.json").read())
         email_mode = cfg.get("email", {}).get("mode", "manual")
         email_env = cfg.get("email", {}).get("env", "test")
         test_addr = cfg.get("email", {}).get("test_address", "")
+        prob_threshold = cfg.get("probability", {}).get("human_review_threshold", 0.3)
     except Exception:
         email_mode = "manual"
         email_env = "test"
         test_addr = ""
+        prob_threshold = 0.3
 
     if email_mode != "auto_send":
         return
@@ -515,15 +495,80 @@ def run_paced_sender():
     try:
         queued = session.query(Claim).filter(
             Claim.status.in_(["queued_to_send", "draft_pending_send"])
-        ).order_by(Claim.created_at).limit(3).all()
+        ).all()
 
         if not queued:
             return
 
         from mcp_servers.email_claims_mcp import send_claim_email
+        from database.models import HitlQueue
 
-        print(f"\n[Paced Sender] Sending {len(queued)} emails...")
+        # Route low-probability and UNKNOWN to HITL
+        to_send = []
         for claim in queued:
+            prob = float(claim.probability or 0.5)
+            claim_type = claim.claim_type or ""
+
+            # Skip FedEx — handled via portal batch filing
+            if "UPS" not in (claim.carrier or "").upper():
+                continue
+
+            if prob < prob_threshold or claim_type == "UNKNOWN":
+                claim.status = "hitl_pending"
+                claim.updated_at = datetime.now()
+                existing = session.query(HitlQueue).filter(
+                    HitlQueue.claim_id == claim.claim_id,
+                    HitlQueue.status == "pending"
+                ).first()
+                if not existing:
+                    session.add(HitlQueue(
+                        claim_id=claim.claim_id,
+                        tracking_id=claim.tracking_id,
+                        reason=f"Low probability ({prob:.0%})" if prob < prob_threshold else "Unknown failure type",
+                        status="pending",
+                    ))
+                session.commit()
+                print(f"[Paced Sender] {claim.tracking_id} → HITL (prob={prob:.0%}, type={claim_type})")
+                continue
+            to_send.append(claim)
+
+        if not to_send:
+            print("[Paced Sender] No claims to send (all routed to HITL)")
+            return
+
+        # Priority sort
+        def priority_score(c):
+            # Get days remaining from failure
+            failure = session.query(Failure).filter(
+                Failure.failure_id == c.failure_id
+            ).first()
+            days_remaining = 15
+            if failure and failure.ship_date:
+                try:
+                    ship_d = datetime.strptime(str(failure.ship_date)[:10], "%Y-%m-%d").date()
+                    days_remaining = max(0, FILING_WINDOW - (date.today() - ship_d).days)
+                except Exception:
+                    pass
+
+            # Detect LLM vs fallback draft
+            draft = c.draft_email_text or ""
+            is_llm = any(kw in draft.lower() for kw in ["tracking shows", "facility", "constituting", "guaranteed delivery"])
+            prob = float(c.probability or 0.5)
+
+            # Lower score = higher priority
+            urgency = 0 if days_remaining <= 3 else 10
+            draft_quality = 0 if is_llm else 5
+            prob_score = int((1 - prob) * 10)
+
+            return (urgency, draft_quality, prob_score)
+
+        to_send.sort(key=priority_score)
+
+        # Pick top 10
+        batch = to_send[:10]
+        print(f"\n[Paced Sender] Sending {len(batch)} of {len(to_send)} queued emails...")
+
+        for claim in batch:
             carrier = claim.carrier or "FedEx"
             subject = f"Service Guarantee Claim — {claim.tracking_id}"
 
@@ -547,20 +592,133 @@ def run_paced_sender():
                 claim.filed = True
                 claim.filed_at = datetime.now()
                 session.commit()
-                print(f"[Paced Sender] Sent: {claim.tracking_id}")
+                print(f"[Paced Sender] ✅ {claim.tracking_id} (prob={float(claim.probability or 0):.0%})")
             else:
-                print(f"[Paced Sender] Failed: {claim.tracking_id} — {result.get('error')}")
+                print(f"[Paced Sender] ❌ {claim.tracking_id} — {result.get('error')}")
 
-            # Small delay between sends (10 seconds)
             time.sleep(10)
 
-        print(f"[Paced Sender] Done — {len(queued)} processed")
+        print(f"[Paced Sender] Done — {len(batch)} sent, {len(to_send)-len(batch)} remaining in queue")
 
     except Exception as e:
         session.rollback()
         print(f"[Paced Sender] Error: {e}")
     finally:
         session.close()
+
+
+# ── DAILY FOLLOW-UP CHECK (midnight EST) ─────────────────────────
+
+def run_daily_followup_check():
+    """
+    Daily at midnight EST — checks filed claims:
+    - Day 10 from ship_date: Send ONE follow-up email (template, no LLM)
+    - Day 15 from ship_date: Move to HITL if still no response
+    """
+    print(f"\n[Follow-Up Check] Running daily check...")
+    session = get_session()
+    try:
+        # Get config
+        cfg = json.loads(open('config/system_config.json').read())
+        email_env = cfg.get('email', {}).get('env', 'test')
+        test_addr = cfg.get('email', {}).get('test_address', '')
+
+        # Check all filed claims (including followup_sent for Day 15 HITL)
+        claims = session.query(Claim).filter(
+            Claim.filed == True,
+            Claim.status.in_(["filed", "followup_sent", "filed_via_portal"]),
+        ).all()
+
+        if not claims:
+            print("[Follow-Up Check] No claims to check")
+            return
+
+        from mcp_servers.email_claims_mcp import send_claim_email
+        from database.models import HitlQueue
+
+        followups_sent = 0
+        hitl_routed = 0
+
+        for claim in claims:
+            try:
+                # Get ship_date from failure record
+                failure = session.query(Failure).filter(
+                    Failure.failure_id == claim.failure_id
+                ).first()
+                if not failure or not failure.ship_date:
+                    continue
+
+                ship_d = datetime.strptime(str(failure.ship_date)[:10], "%Y-%m-%d").date()
+                days_elapsed = (date.today() - ship_d).days
+
+                # Day 15+ with no response → HITL
+                if days_elapsed >= 15 and claim.status in ("filed", "followup_sent"):
+                    claim.status = "hitl_pending"
+                    claim.updated_at = datetime.now()
+                    # Add to HITL queue (avoid duplicates)
+                    existing = session.query(HitlQueue).filter(
+                        HitlQueue.claim_id == claim.claim_id,
+                        HitlQueue.status == "pending"
+                    ).first()
+                    if not existing:
+                        session.add(HitlQueue(
+                            claim_id=claim.claim_id,
+                            tracking_id=claim.tracking_id,
+                            reason=f"No carrier response after {days_elapsed} days — filing window expired",
+                            status="pending",
+                            days_remaining=max(0, FILING_WINDOW - days_elapsed),
+                        ))
+                    session.commit()
+                    hitl_routed += 1
+                    print(f"[Follow-Up Check] {claim.tracking_id} → HITL (Day {days_elapsed})")
+                    continue
+
+                # Day 10+ with status still "filed" → send ONE follow-up
+                if days_elapsed >= 10 and claim.status == "filed":
+                    carrier = claim.carrier or "FedEx"
+                    carrier_team = "UPS Claims Team" if "UPS" in carrier.upper() else f"{carrier} Claims Team"
+                    days_remaining = max(0, FILING_WINDOW - days_elapsed)
+
+                    subject = f"Follow-Up: Pending Claim — Track ID: {claim.tracking_id}"
+                    body = (
+                        f"Dear {carrier_team},\n\n"
+                        f"We are following up on our service guarantee claim for tracking ID "
+                        f"{claim.tracking_id}, filed on {str(claim.filed_at)[:10]}. We have not yet "
+                        f"received a response and would appreciate an update on the status of this claim.\n\n"
+                        f"The filing window closes in {days_remaining} day(s). We kindly request your "
+                        f"review and response at your earliest convenience.\n\n"
+                        f"We appreciate your attention in this matter.\n\n"
+                        f"Regards,\nREBLOOM Logistics"
+                    )
+
+                    # Resolve email target
+                    if email_env == "test":
+                        to_addr = test_addr
+                    else:
+                        to_addr = "support@shippo.com" if "UPS" in carrier.upper() else "file.claim@fedex.com"
+
+                    send_claim_email(
+                        to=to_addr, subject=subject, body=body,
+                        claim_id=claim.claim_id, carrier=carrier,
+                        tracking_id=claim.tracking_id,
+                    )
+
+                    claim.status = "followup_sent"
+                    claim.updated_at = datetime.now()
+                    session.commit()
+                    followups_sent += 1
+                    print(f"[Follow-Up Check] {claim.tracking_id} — follow-up sent (Day {days_elapsed})")
+
+            except Exception as e:
+                print(f"[Follow-Up Check] Error {claim.tracking_id}: {e}")
+                log_error("FOLLOWUP_ERROR", "daily_followup", str(e), claim.tracking_id)
+
+        print(f"[Follow-Up Check] Done — {followups_sent} follow-ups sent, {hitl_routed} routed to HITL")
+    finally:
+        session.close()
+
+
+# ── SCHEDULER SETUP ───────────────────────────────────────────────
 
 def create_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler()
@@ -572,9 +730,15 @@ def create_scheduler() -> BackgroundScheduler:
         replace_existing=True,
     )
     scheduler.add_job(
+        run_daily_followup_check,
+        CronTrigger(hour=0, minute=0, timezone="US/Eastern"),
+        id="daily_followup", name="Daily Follow-Up Check (midnight EST)",
+        replace_existing=True,
+    )
+    scheduler.add_job(
         run_paced_sender,
-        IntervalTrigger(minutes=30),
-        id="paced_sender", name="Paced Email Sender (every 30 min)",
+        IntervalTrigger(hours=1),
+        id="paced_sender", name="Paced Email Sender (every 1 hour)",
     )
 
     scheduler.add_job(
@@ -667,6 +831,3 @@ if __name__ == "__main__":
         except (KeyboardInterrupt, SystemExit):
             scheduler.shutdown()
             print("[Scheduler] Stopped.")
-
-
-# ── PACED EMAIL SENDER ────────────────────────────────────────────

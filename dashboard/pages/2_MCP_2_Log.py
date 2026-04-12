@@ -89,9 +89,12 @@ def load_config():
     return {}
 
 @st.cache_data(ttl=300)
-def q_mcp2(ship_method=None, direction_filter=None, status_filter=None) -> pd.DataFrame:
+def q_mcp2(ship_method=None, direction_filter=None, status_filter=None, tracking_id_search=None) -> pd.DataFrame:
     clauses = ["1=1"]
     params  = {}
+    if tracking_id_search:
+        clauses.append("el.tracking_id LIKE :tid")
+        params["tid"] = f"%{tracking_id_search}%"
     if ship_method:
         clauses.append("o.ship_method = :sm")
         params["sm"] = ship_method
@@ -180,12 +183,14 @@ if not all_df.empty:
 # ── Filters ───────────────────────────────────────────────────────
 pre_sm = st.session_state.get("mcp2_filter_sm", "")
 
-f1, f2, f3, f4 = st.columns([2, 1.2, 1.2, 1])
-sm_filter  = f1.text_input("Ship Method", value=pre_sm or "", key="mcp2_sm_input",
+f1, f2, f3, f4, f5 = st.columns([1.5, 1.5, 1, 1, 0.8])
+tid_search = f1.text_input("🔍 Tracking ID", key="mcp2_tid_search",
+                            placeholder="Enter tracking ID...")
+sm_filter  = f2.text_input("Ship Method", value=pre_sm or "", key="mcp2_sm_input",
                             placeholder="e.g. FEDEX_GROUND")
-dir_filter = f2.selectbox("Direction", ["All", "Sent", "Received"])
-sts_filter = f3.selectbox("Status", ["All", "filed", "rejected", "approved", "sent", "failed", "pending"])
-with f4:
+dir_filter = f3.selectbox("Direction", ["All", "Sent", "Received"])
+sts_filter = f4.selectbox("Status", ["All", "filed", "rejected", "approved", "sent", "failed", "pending"])
+with f5:
     st.write("")
     if st.button("✕ Clear", key="mcp2_clear"):
         st.session_state["mcp2_filter_sm"] = None
@@ -196,7 +201,7 @@ if pre_sm:
     st.info(f"🔍 Filtered to: **{pre_sm}** (from Dashboard)")
 
 # ── Data ──────────────────────────────────────────────────────────
-df = q_mcp2(sm_filter or None, dir_filter, sts_filter)
+df = q_mcp2(sm_filter or None, dir_filter, sts_filter, tid_search or None)
 
 if df.empty:
     st.info("No email records match this filter.")

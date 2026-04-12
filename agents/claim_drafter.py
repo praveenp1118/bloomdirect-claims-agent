@@ -242,13 +242,13 @@ Reason:        [short reason citing first fault event]
    - Cite specific fault event by date, location, exact status text (if available)
    - State this is carrier-side failure — not weather or shipper error
    - {occasion_context if occasion_context else "State the business impact"}
-   - Demand full refund under {guarantee}, expect response within 5 business days
+   - Request full refund under {guarantee}
 
 3. Sign off:
 Regards,
 REBLOOM Logistics
 
-Rules: Address to {carrier_team}. Cite their own data. Firm not passive. No subject line. No markdown. Under 200 words."""
+Rules: Address to {carrier_team}. Cite their own tracking data as evidence. Professional and factual — NOT aggressive, NO legal threats, NO consequences, NO "demand", NO "compel", NO regulatory references. Simply state the facts and request the refund. No subject line. No markdown. Under 150 words."""
 
     return prompt
 
@@ -342,7 +342,9 @@ Reason:        {claim_type}{f" — {event[:60]}" if event else ""}
 
 Dear {carrier} Claims Team,
 
-Shipment {track_id} was shipped on {ship_date} under {ship_method} with a guaranteed delivery that was missed by {delay_days} day(s).{f" Your tracking records confirm a carrier-side failure that directly caused this delay: {event}" if event else ""} This constitutes a breach of the {policy_ref} attributable to {carrier} operations, not weather or shipper error. We formally request a full refund of all shipping charges and expect confirmation within 5 business days.
+Shipment {track_id} was shipped on {ship_date} under {ship_method} with a guaranteed delivery that was missed by {delay_days} day(s).{f" Your tracking records confirm a carrier-side failure that directly caused this delay: {event}" if event else ""} This constitutes a breach of the {policy_ref} attributable to {carrier} operations, not weather or shipper error. We request a full refund of all applicable shipping charges under the service guarantee.
+
+We appreciate your attention in this matter.
 
 Regards,
 REBLOOM Logistics"""

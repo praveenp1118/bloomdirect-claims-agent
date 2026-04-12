@@ -16,6 +16,7 @@ services:
       - ./mcp_servers:/app/mcp_servers
       - ./config:/app/config
       - ./database:/app/database
+      - ./scripts:/app/scripts
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
@@ -30,6 +31,11 @@ services:
     build: .
     container_name: bloomdirect_scheduler
     command: ["python", "scheduler/scheduler.py"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'print(1)' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
     volumes:
       - ./data:/app/data
       - ./.env:/app/.env
@@ -40,6 +46,7 @@ services:
       - ./mcp_servers:/app/mcp_servers
       - ./config:/app/config
       - ./database:/app/database
+      - ./scripts:/app/scripts
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1

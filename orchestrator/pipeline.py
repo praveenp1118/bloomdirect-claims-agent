@@ -295,6 +295,22 @@ def node_generate_reasoning(state: ClaimState) -> ClaimState:
         print(f"[Node] generate_reasoning: SKIPPED (manual mode)")
         return state
 
+    # Skip LLM for FedEx — filed via portal Excel, not email
+    carrier = state.get("classification", {}).get("carrier", "")
+    if carrier == "FedEx":
+        # Deterministic short_label + narrative for Excel comment (295 char max)
+        order = state.get("validated_order", {})
+        classification = state.get("classification", {})
+        delay = classification.get("delay_days", 1)
+        ship_date = order.get("ship_date", "")
+        failure_type = classification.get("failure_type", "LATE")
+        first_bad = classification.get("first_bad_event", "")
+        event_text = f" Carrier event: {first_bad}." if first_bad else ""
+        state["short_label"] = f"{failure_type} — {delay}d late"
+        state["llm_narrative"] = f"Late delivery — {delay} day(s) past guaranteed date. Ship date: {ship_date}.{event_text} FedEx tracking confirms shipment was not delivered by committed date."
+        print(f"[Node] generate_reasoning: SKIPPED for FedEx (deterministic)")
+        return state
+
     print(f"[Node] generate_reasoning: claim_id={state.get('claim_id')}")
 
     try:
@@ -302,6 +318,20 @@ def node_generate_reasoning(state: ClaimState) -> ClaimState:
         classification = state.get("classification", {})
         order          = state.get("validated_order", {})
         mcp_history    = state.get("mcp_history", [])
+        # Load from tracking_cache if pipeline didn't call MCP
+        if not mcp_history:
+            try:
+                import json as _j2
+                _sess2 = get_session()
+                tc = _sess2.query(TrackingCache).filter_by(
+                    tracking_id=order.get("track_id", "")
+                ).first()
+                _sess2.close()
+                if tc and tc.full_history_json:
+                    mcp_history = _j2.loads(tc.full_history_json)
+                    print(f"[Node] generate_reasoning: loaded {len(mcp_history)} events from cache")
+            except Exception:
+                pass
 
         result = generate_reasoning(
             tracking_id     = order.get("track_id", ""),
@@ -379,6 +409,25 @@ def node_add_to_hitl(state: ClaimState) -> ClaimState:
 def node_draft_claim(state: ClaimState) -> ClaimState:
     """Run Agent 3 - Claim Drafter (LLM-powered)."""
     print(f"[Node] draft_claim: claim_id={state.get('claim_id')}")
+
+    # Skip LLM drafting for FedEx — filed via portal Excel batch, not email
+    carrier = state.get("classification", {}).get("carrier", "")
+    if carrier == "FedEx":
+        print(f"[Node] draft_claim: SKIPPED for FedEx (portal batch filing)")
+        return state
+    # Load mcp_history from cache if missing
+    if not state.get("mcp_history"):
+        try:
+            import json as _j3
+            track_id = state.get("validated_order", {}).get("track_id", "")
+            _sess = get_session()
+            tc = _sess.query(TrackingCache).filter_by(tracking_id=track_id).first()
+            _sess.close()
+            if tc and tc.full_history_json:
+                state = {**state, "mcp_history": _j3.loads(tc.full_history_json)}
+                print(f"[Node] draft_claim: loaded {len(state['mcp_history'])} events from cache")
+        except Exception:
+            pass
 
     # Import here to avoid circular imports
     try:
