@@ -15,7 +15,7 @@
   "scenarios": [
     {
       "id": "EV-001",
-      "category": "UPS Late — First Attempt",
+      "category": "UPS Late \u2014 First Attempt",
       "input": {
         "carrier": "UPS",
         "ship_method": "UPS_GROUND",
@@ -23,28 +23,28 @@
         "ship_date": "2026-03-15",
         "delay_days": 2,
         "failure_type": "LATE",
-        "claim_amount": 12.50,
-        "first_bad_event": "Delivery attempted — no access",
+        "claim_amount": 12.5,
+        "first_bad_event": "Delivery attempted \u2014 no access",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Shipping Guarantee Claim — 1Z999AA10123456700 — UPS Ground 2-Day Delay",
-        "body": "Dear Shippo Claims Team,\n\nWe are writing regarding tracking number 1Z999AA10123456700 shipped on March 15, 2026 via UPS Ground. Per UPS Ground SLA, delivery was guaranteed by March 19, 2026. The package was delivered on March 21, 2026 — 2 business days beyond the guaranteed date.\n\nPer UPS Service Guarantee policy, we respectfully request reimbursement of the shipping fee ($12.50) for this delayed shipment.\n\nTracking Summary:\n- March 15: Package picked up\n- March 19: Delivery attempted — no access (guaranteed delivery date)\n- March 21: Delivered\n\nPlease process this claim at your earliest convenience. We are happy to provide any additional documentation.\n\nBest regards,\nREBLOOM Logistics"
+        "subject": "Shipping Guarantee Claim \u2014 1Z999AA10123456700 \u2014 UPS Ground 2-Day Delay",
+        "body": "Dear Shippo Claims Team,\n\nWe are writing regarding tracking number 1Z999AA10123456700 shipped on March 15, 2026 via UPS Ground. Per UPS Ground SLA, delivery was guaranteed by March 19, 2026. The package was delivered on March 21, 2026 \u2014 2 business days beyond the guaranteed date.\n\nPer UPS Service Guarantee policy, we respectfully request reimbursement of the shipping fee ($12.50) for this delayed shipment.\n\nTracking Summary:\n- March 15: Package picked up\n- March 19: Delivery attempted \u2014 no access (guaranteed delivery date)\n- March 21: Delivered\n\nPlease process this claim at your earliest convenience. We are happy to provide any additional documentation.\n\nBest regards,\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.5,
-        "factual_accuracy": 5.0,
-        "completeness": 4.5,
-        "actionability": 4.5,
-        "overall": 4.63
+        "tone_appropriateness": 4,
+        "factual_accuracy": 3,
+        "completeness": 4,
+        "actionability": 5,
+        "overall": 4.0
       },
-      "judge_reasoning": "Professional tone appropriate for first attempt. All dates and amounts accurate. Specific dollar amount stated. Minor: could reference UPS Ground guarantee policy number for stronger claim.",
+      "judge_reasoning": "The tone is professional and courteous, appropriate for a first attempt without being aggressive or overly demanding. However, the email is addressed to 'Shippo Claims Team' rather than UPS directly, which is a factual/contextual mismatch given the carrier is UPS \u2014 this raises accuracy concerns, and the tracking summary includes a 'March 19: Delivery attempted \u2014 no access' entry that is not supported by the claim context, potentially undermining credibility. Completeness and actionability are strong, with a clear dollar amount, policy reference, tracking timeline, and an explicit reimbursement request.",
       "pass": true
     },
     {
       "id": "EV-002",
-      "category": "UPS Late — First Attempt",
+      "category": "UPS Late \u2014 First Attempt",
       "input": {
         "carrier": "UPS",
         "ship_method": "UPS_2DAY",
@@ -53,27 +53,27 @@
         "delay_days": 3,
         "failure_type": "LATE",
         "claim_amount": 24.99,
-        "first_bad_event": "Weather delay — Louisville hub",
+        "first_bad_event": "Weather delay \u2014 Louisville hub",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Shipping Guarantee Claim — 1Z999AA10123456701 — UPS 2-Day 3-Day Delay",
-        "body": "Dear Shippo Claims Team,\n\nTracking number 1Z999AA10123456701 was shipped March 20, 2026 via UPS 2-Day Air with guaranteed delivery March 22, 2026. Actual delivery occurred March 25, 2026 — 3 business days late.\n\nWhile we note a weather delay was recorded at Louisville hub, the UPS Service Guarantee applies unless weather events meet specific exemption criteria. We request review of this shipment for guarantee refund of $24.99.\n\nBest regards,\nREBLOOM Logistics"
+        "subject": "Shipping Guarantee Claim \u2014 1Z999AA10123456701 \u2014 UPS 2-Day 3-Day Delay",
+        "body": "Dear Shippo Claims Team,\n\nTracking number 1Z999AA10123456701 was shipped March 20, 2026 via UPS 2-Day Air with guaranteed delivery March 22, 2026. Actual delivery occurred March 25, 2026 \u2014 3 business days late.\n\nWhile we note a weather delay was recorded at Louisville hub, the UPS Service Guarantee applies unless weather events meet specific exemption criteria. We request review of this shipment for guarantee refund of $24.99.\n\nBest regards,\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.0,
-        "factual_accuracy": 4.5,
-        "completeness": 4.0,
-        "actionability": 4.0,
-        "overall": 4.13
+        "tone_appropriateness": 4,
+        "factual_accuracy": 4,
+        "completeness": 4,
+        "actionability": 4,
+        "overall": 4.0
       },
-      "judge_reasoning": "Good handling of the weather caveat — acknowledges it without conceding. Slightly generic in structure. Dollar amount clearly stated.",
+      "judge_reasoning": "The email is professionally written, carrier-appropriate, and includes all core facts \u2014 tracking number, ship date, guaranteed delivery date, actual delivery date, and delay duration. It proactively acknowledges the weather delay while correctly noting that exemptions must meet specific criteria, which strengthens the claim. The specific refund amount is clearly stated and a review is requested, though the actionability could be marginally sharper with an explicit next-step deadline or preferred resolution method.",
       "pass": true
     },
     {
       "id": "EV-003",
-      "category": "UPS Late — First Attempt",
+      "category": "UPS Late \u2014 First Attempt",
       "input": {
         "carrier": "UPS",
         "ship_method": "UPS_GROUND",
@@ -82,28 +82,28 @@
         "delay_days": 1,
         "failure_type": "LATE",
         "claim_amount": 10.99,
-        "first_bad_event": "Arrived at destination facility — 1 day late",
+        "first_bad_event": "Arrived at destination facility \u2014 1 day late",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Shipping Guarantee Claim — 1Z999AA10123456702",
+        "subject": "Shipping Guarantee Claim \u2014 1Z999AA10123456702",
         "body": "Dear Team,\n\nWe hereby formally demand a refund within 5 business days for shipment 1Z999AA10123456702 which was delivered 1 day past the guaranteed date. This is unacceptable service and we expect immediate resolution.\n\nAmount: $10.99\n\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 2.0,
-        "factual_accuracy": 3.5,
-        "completeness": 2.5,
-        "actionability": 3.5,
-        "overall": 2.88
+        "tone_appropriateness": 1,
+        "factual_accuracy": 4,
+        "completeness": 2,
+        "actionability": 3,
+        "overall": 2.5
       },
-      "judge_reasoning": "FAILURE: Overly aggressive tone ('hereby formally demand', 'unacceptable service'). Missing tracking details and ship date. Prompt was subsequently updated to explicitly prohibit this language.",
+      "judge_reasoning": "The tone is overly aggressive and legalistic for a first-attempt claim on a minor 1-day delay \u2014 phrases like 'hereby formally demand' and 'unacceptable service' are disproportionate and likely to antagonize the carrier representative. While the tracking number and claim amount are correctly referenced, the email lacks critical supporting details such as the promised delivery date, actual delivery date, service guarantee policy citation, and any mention of supporting documentation. The resolution ask includes a dollar amount but lacks a specific preferred resolution method (credit, check, etc.) and the 5-business-day ultimatum is inappropriate for attempt number 1.",
       "pass": false,
-      "failure_mode": "overly_formal_aggressive_language"
+      "failure_mode": "Tone is combative and disproportionate for a first-attempt, low-value late claim; email is missing key completeness fields including promised vs. actual delivery dates and policy reference, undermining credibility and actionability."
     },
     {
       "id": "EV-004",
-      "category": "UPS Late — First Attempt",
+      "category": "UPS Late \u2014 First Attempt",
       "input": {
         "carrier": "UPS",
         "ship_method": "UPS_GROUND",
@@ -112,22 +112,22 @@
         "delay_days": 2,
         "failure_type": "LATE",
         "claim_amount": 15.49,
-        "first_bad_event": "Out for delivery — not delivered",
+        "first_bad_event": "Out for delivery \u2014 not delivered",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Shipping Guarantee Claim — 1Z999AA10123456703 — UPS Ground Delivery Delay",
-        "body": "Dear Shippo Claims Team,\n\nI'm reaching out regarding tracking 1Z999AA10123456703, shipped March 25, 2026 via UPS Ground with guaranteed delivery March 29, 2026. The shipment was ultimately delivered March 31 — 2 days past the guaranteed date.\n\nWe'd appreciate review of this shipment under the UPS Ground Service Guarantee. Shipping fee for reimbursement: $15.49.\n\nHappy to provide any additional supporting information.\n\nBest regards,\nREBLOOM Logistics"
+        "subject": "Shipping Guarantee Claim \u2014 1Z999AA10123456703 \u2014 UPS Ground Delivery Delay",
+        "body": "Dear Shippo Claims Team,\n\nI'm reaching out regarding tracking 1Z999AA10123456703, shipped March 25, 2026 via UPS Ground with guaranteed delivery March 29, 2026. The shipment was ultimately delivered March 31 \u2014 2 days past the guaranteed date.\n\nWe'd appreciate review of this shipment under the UPS Ground Service Guarantee. Shipping fee for reimbursement: $15.49.\n\nHappy to provide any additional supporting information.\n\nBest regards,\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 5.0,
-        "factual_accuracy": 5.0,
-        "completeness": 4.5,
-        "actionability": 4.5,
-        "overall": 4.75
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 4.0
       },
-      "judge_reasoning": "Excellent tone — warm, professional, not demanding. Dates accurate. Dollar amount clear. Best example in this category.",
+      "judge_reasoning": "The email is professionally written with a warm, non-demanding tone appropriate for a first attempt, and all factual details (tracking number, ship date, guaranteed date, actual delivery date, delay days, and claim amount) precisely match the provided context. However, completeness is middling as the email lacks explicit reference to any supporting documentation (e.g., invoice, proof of payment) and does not clearly specify a desired resolution timeline or next step beyond a vague offer to provide more information. Actionability is strong given the specific dollar amount is stated, though the ask for reimbursement could be more direct with a clear call to action.",
       "pass": true
     },
     {
@@ -141,22 +141,22 @@
         "delay_days": 0,
         "failure_type": "DAMAGE",
         "claim_amount": 89.99,
-        "first_bad_event": "Package damaged in transit — Memphis facility",
+        "first_bad_event": "Package damaged in transit \u2014 Memphis facility",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Damage Claim — 774899172100 — FedEx Ground",
+        "subject": "Damage Claim \u2014 774899172100 \u2014 FedEx Ground",
         "body": "Dear FedEx Claims Team,\n\nWe are filing a damage claim for tracking number 774899172100, shipped March 18, 2026 via FedEx Ground. Per your tracking records, damage was recorded at the Memphis facility on March 20, 2026.\n\nThe shipment contained perishable floral arrangements with a declared value of $89.99. Due to the in-transit damage, the contents were non-deliverable.\n\nWe respectfully request reimbursement of $89.99 per FedEx's declared value coverage policy. Documentation available upon request.\n\nBest regards,\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.5,
-        "factual_accuracy": 4.5,
-        "completeness": 4.5,
-        "actionability": 4.0,
-        "overall": 4.38
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 4,
+        "actionability": 4,
+        "overall": 4.25
       },
-      "judge_reasoning": "Good damage claim structure. Correctly mentions declared value. Could be stronger on specific reimbursement path (portal vs email).",
+      "judge_reasoning": "The email is professionally written, accurately references all key facts from the claim context including tracking number, dates, ship method, and claim amount. It includes a policy reference and describes the product type, though supporting documentation is offered rather than attached, and a specific next step (e.g., expected response timeframe or claims portal submission) is not explicitly outlined. For a first-attempt claim, the tone strikes a good balance \u2014 respectful and clear without being demanding.",
       "pass": true
     },
     {
@@ -170,22 +170,22 @@
         "delay_days": 0,
         "failure_type": "DAMAGE",
         "claim_amount": 149.99,
-        "first_bad_event": "Delivery exception — package damaged",
+        "first_bad_event": "Delivery exception \u2014 package damaged",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Damage Claim — FedEx 2-Day — 774899172101",
+        "subject": "Damage Claim \u2014 FedEx 2-Day \u2014 774899172101",
         "body": "Dear FedEx Claims Team,\n\nTracking 774899172101 (FedEx 2-Day, shipped March 25, 2026) shows a delivery exception due to package damage. We are filing a damage claim for the shipment value of $149.99.\n\nWe would appreciate guidance on the fastest resolution path and are prepared to provide photos or additional documentation as required.\n\nBest regards,\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.5,
-        "factual_accuracy": 4.0,
-        "completeness": 3.5,
-        "actionability": 4.0,
-        "overall": 4.0
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 3,
+        "actionability": 3,
+        "overall": 3.75
       },
-      "judge_reasoning": "Good tone, proactively offers documentation. Slightly short — missing ship date confirmation and delivery date. Completeness could be improved.",
+      "judge_reasoning": "The email is professional, warm, and appropriately structured for a first-attempt damage claim, accurately reflecting all provided context including tracking number, ship method, date, and claim amount. However, it lacks a FedEx-specific policy reference (e.g., citing FedEx's declared value or damage claim process), and the resolution ask is somewhat vague \u2014 requesting 'guidance on the fastest resolution path' rather than explicitly requesting reimbursement of $149.99 within a defined timeframe or via a specific channel. Supporting evidence (photos, invoice) is offered but not confirmed as attached.",
       "pass": true
     },
     {
@@ -199,27 +199,27 @@
         "delay_days": 0,
         "failure_type": "DAMAGE",
         "claim_amount": 199.99,
-        "first_bad_event": "Package damaged — customer refused delivery",
+        "first_bad_event": "Package damaged \u2014 customer refused delivery",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Damage Claim — 774899172102 — Customer Refused Damaged Package",
-        "body": "Dear FedEx Claims Team,\n\nWe are submitting a damage claim for tracking 774899172102, shipped April 1, 2026. The customer refused delivery upon inspection of a visibly damaged package — a reasonable action given the condition of the shipment upon arrival.\n\nShipment value: $199.99. We request full reimbursement per FedEx damage coverage policy. The customer's refusal does not constitute a return request but rather confirmation of carrier-caused damage.\n\nAvailable documentation: delivery exception record, customer communication, order details.\n\nBest regards,\nREBLOOM Logistics"
+        "subject": "Damage Claim \u2014 774899172102 \u2014 Customer Refused Damaged Package",
+        "body": "Dear FedEx Claims Team,\n\nWe are submitting a damage claim for tracking 774899172102, shipped April 1, 2026. The customer refused delivery upon inspection of a visibly damaged package \u2014 a reasonable action given the condition of the shipment upon arrival.\n\nShipment value: $199.99. We request full reimbursement per FedEx damage coverage policy. The customer's refusal does not constitute a return request but rather confirmation of carrier-caused damage.\n\nAvailable documentation: delivery exception record, customer communication, order details.\n\nBest regards,\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.5,
-        "factual_accuracy": 5.0,
-        "completeness": 5.0,
-        "actionability": 5.0,
-        "overall": 4.88
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 4,
+        "actionability": 4,
+        "overall": 4.25
       },
-      "judge_reasoning": "Excellent. Proactively addresses the 'refused delivery' nuance (critical for this claim type). Documentation list included. Clear ask. Best in category.",
+      "judge_reasoning": "The email is professional, accurate, and includes all key facts \u2014 tracking number, ship date, amount, and failure type \u2014 with a clear reimbursement request. The tone is appropriate for a first attempt, avoiding aggression while remaining assertive. Completeness is slightly below perfect as documentation is listed but not explicitly attached or described in detail, and no specific next-step deadline or claims portal reference is provided.",
       "pass": true
     },
     {
       "id": "EV-008",
-      "category": "Carrier Delay — Mechanical",
+      "category": "Carrier Delay \u2014 Mechanical",
       "input": {
         "carrier": "UPS",
         "ship_method": "UPS_2DAY",
@@ -228,27 +228,27 @@
         "delay_days": 3,
         "failure_type": "CARRIER_DELAY",
         "claim_amount": 29.99,
-        "first_bad_event": "Mechanical failure — trailer breakdown",
+        "first_bad_event": "Mechanical failure \u2014 trailer breakdown",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Carrier Delay Claim — 1Z999AA10123456710 — Mechanical Failure",
-        "body": "Dear Shippo Claims Team,\n\nWe are filing a carrier delay claim for 1Z999AA10123456710 (UPS 2-Day Air, shipped March 10, 2026, guaranteed delivery March 12, 2026). Per UPS tracking, a mechanical failure — trailer breakdown — caused a 3-day delay, with actual delivery on March 15.\n\nMechanical failures are carrier-controlled events and fall clearly within UPS Service Guarantee coverage. We respectfully request reimbursement of the $29.99 shipping fee.\n\nBest regards,\nREBLOOM Logistics"
+        "subject": "Carrier Delay Claim \u2014 1Z999AA10123456710 \u2014 Mechanical Failure",
+        "body": "Dear Shippo Claims Team,\n\nWe are filing a carrier delay claim for 1Z999AA10123456710 (UPS 2-Day Air, shipped March 10, 2026, guaranteed delivery March 12, 2026). Per UPS tracking, a mechanical failure \u2014 trailer breakdown \u2014 caused a 3-day delay, with actual delivery on March 15.\n\nMechanical failures are carrier-controlled events and fall clearly within UPS Service Guarantee coverage. We respectfully request reimbursement of the $29.99 shipping fee.\n\nBest regards,\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 5.0,
-        "factual_accuracy": 5.0,
-        "completeness": 5.0,
-        "actionability": 5.0,
-        "overall": 5.0
+        "tone_appropriateness": 4,
+        "factual_accuracy": 4,
+        "completeness": 4,
+        "actionability": 5,
+        "overall": 4.25
       },
-      "judge_reasoning": "Perfect. Explicitly names the failure type, correctly frames mechanical failure as carrier-controlled (strengthens claim), all dates accurate, clear dollar ask.",
+      "judge_reasoning": "The email is professionally written, appropriately firm without being aggressive, and well-suited for a first attempt. All core facts align with the claim context \u2014 tracking number, ship method, dates, delay duration, and claim amount are accurate, though the subject line references 'Mechanical Failure' which is a reasonable inference but not explicitly provided in the context. The claim includes a policy reference (UPS Service Guarantee), a specific cause (trailer breakdown), and a precise reimbursement amount with a clear ask, making it highly actionable.",
       "pass": true
     },
     {
       "id": "EV-009",
-      "category": "Carrier Delay — Mechanical",
+      "category": "Carrier Delay \u2014 Mechanical",
       "input": {
         "carrier": "FedEx",
         "ship_method": "FEDEX_2DAY",
@@ -257,27 +257,27 @@
         "delay_days": 2,
         "failure_type": "CARRIER_DELAY",
         "claim_amount": 34.99,
-        "first_bad_event": "Mechanical failure on aircraft — Memphis",
+        "first_bad_event": "Mechanical failure on aircraft \u2014 Memphis",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Carrier Delay Claim — 774899172110 — Aircraft Mechanical Failure",
-        "body": "Dear FedEx Claims Team,\n\nTracking 774899172110 (FedEx 2-Day, shipped March 17, 2026) shows a 2-day delay caused by a mechanical failure on aircraft at Memphis — an event entirely within FedEx's operational control.\n\nGuaranteed delivery: March 19, 2026. Actual delivery: March 21, 2026. Shipping fee paid: $34.99.\n\nWe respectfully request full reimbursement under FedEx Money Back Guarantee for carrier-caused delays.\n\nREBLOOM Logistics"
+        "subject": "Carrier Delay Claim \u2014 774899172110 \u2014 Aircraft Mechanical Failure",
+        "body": "Dear FedEx Claims Team,\n\nTracking 774899172110 (FedEx 2-Day, shipped March 17, 2026) shows a 2-day delay caused by a mechanical failure on aircraft at Memphis \u2014 an event entirely within FedEx's operational control.\n\nGuaranteed delivery: March 19, 2026. Actual delivery: March 21, 2026. Shipping fee paid: $34.99.\n\nWe respectfully request full reimbursement under FedEx Money Back Guarantee for carrier-caused delays.\n\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.5,
-        "factual_accuracy": 5.0,
-        "completeness": 5.0,
-        "actionability": 5.0,
-        "overall": 4.88
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 4,
+        "actionability": 5,
+        "overall": 4.5
       },
-      "judge_reasoning": "Very strong. Correctly cites FedEx Money Back Guarantee by name. All dates and amounts accurate. Carrier operational control argument well made.",
+      "judge_reasoning": "The draft is professional, factually precise, and matches all provided context including tracking number, ship method, dates, delay duration, and claim amount. The phrase 'entirely within FedEx's operational control' edges slightly toward assertive rather than warm, and supporting evidence (e.g., proof of payment, screenshots) is referenced implicitly but not listed as attachments. The actionability is strong with a specific dollar amount and a clear policy-based reimbursement request.",
       "pass": true
     },
     {
       "id": "EV-010",
-      "category": "Carrier Delay — Mechanical",
+      "category": "Carrier Delay \u2014 Mechanical",
       "input": {
         "carrier": "UPS",
         "ship_method": "UPS_GROUND",
@@ -286,27 +286,27 @@
         "delay_days": 4,
         "failure_type": "CARRIER_DELAY",
         "claim_amount": 18.99,
-        "first_bad_event": "Trailer delay — late departure from hub",
+        "first_bad_event": "Trailer delay \u2014 late departure from hub",
         "attempt_number": 1,
         "tone_requested": "professional"
       },
       "generated_draft": {
-        "subject": "Carrier Delay Claim — 1Z999AA10123456711 — Hub Trailer Delay",
-        "body": "Dear Shippo Claims Team,\n\nWe are filing for tracking 1Z999AA10123456711 (UPS Ground, March 20, 2026). A 4-day delay occurred due to a late trailer departure from the hub — a carrier operational issue. Guaranteed delivery was March 26; actual delivery was March 30.\n\nClaim amount: $18.99 shipping fee reimbursement.\n\nBest regards,\nREBLOOM Logistics"
+        "subject": "Carrier Delay Claim \u2014 1Z999AA10123456711 \u2014 Hub Trailer Delay",
+        "body": "Dear Shippo Claims Team,\n\nWe are filing for tracking 1Z999AA10123456711 (UPS Ground, March 20, 2026). A 4-day delay occurred due to a late trailer departure from the hub \u2014 a carrier operational issue. Guaranteed delivery was March 26; actual delivery was March 30.\n\nClaim amount: $18.99 shipping fee reimbursement.\n\nBest regards,\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.5,
-        "factual_accuracy": 4.5,
-        "completeness": 4.0,
-        "actionability": 4.5,
-        "overall": 4.38
+        "tone_appropriateness": 3,
+        "factual_accuracy": 4,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 3.5
       },
-      "judge_reasoning": "Concise and accurate. Slightly short — could include more tracking event detail to support the claim. Core information present and actionable.",
+      "judge_reasoning": "The email is professional and concise, with accurate tracking, dates, and claim amount, though the ship date (March 20) and guaranteed delivery (March 26) suggest a 6-day transit window rather than a typical UPS Ground window, which could be flagged. It lacks a policy or SLA reference and does not include supporting evidence such as tracking screenshots or invoice documentation. The claim amount and reimbursement ask are clear, but the next-step request is implicit rather than explicitly stated.",
       "pass": true
     },
     {
       "id": "EV-011",
-      "category": "Rejection Resubmission — Firm Tone",
+      "category": "Rejection Resubmission \u2014 Firm Tone",
       "input": {
         "carrier": "UPS",
         "ship_method": "UPS_2DAY",
@@ -318,25 +318,26 @@
         "rejection_reason": "Claim denied: package within delivery window per our records",
         "attempt_number": 2,
         "tone_requested": "firm",
-        "current_probability": 0.70
+        "current_probability": 0.7
       },
       "generated_draft": {
-        "subject": "RESUBMISSION: Shipping Guarantee Claim — 1Z999AA10123456720",
-        "body": "Dear Shippo Claims Team,\n\nWe are resubmitting claim for tracking 1Z999AA10123456720. Our records show guaranteed delivery of March 7, 2026, with actual delivery on March 9 — 2 business days late per UPS Ground SLA.\n\nWe respectfully disagree with the denial basis. Per UPS tracking data (attached), the package was scanned at destination facility on March 7 but not delivered until March 9 — confirming the delay.\n\nThis is a legitimate service guarantee claim and we request this be reviewed by a senior claims specialist. Reimbursement requested: $24.99.\n\nREBLOOM Logistics"
+        "subject": "RESUBMISSION: Shipping Guarantee Claim \u2014 1Z999AA10123456720",
+        "body": "Dear Shippo Claims Team,\n\nWe are resubmitting claim for tracking 1Z999AA10123456720. Our records show guaranteed delivery of March 7, 2026, with actual delivery on March 9 \u2014 2 business days late per UPS Ground SLA.\n\nWe respectfully disagree with the denial basis. Per UPS tracking data (attached), the package was scanned at destination facility on March 7 but not delivered until March 9 \u2014 confirming the delay.\n\nThis is a legitimate service guarantee claim and we request this be reviewed by a senior claims specialist. Reimbursement requested: $24.99.\n\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.5,
-        "factual_accuracy": 4.5,
-        "completeness": 4.5,
-        "actionability": 4.5,
-        "overall": 4.5
+        "tone_appropriateness": 3,
+        "factual_accuracy": 2,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 3.0
       },
-      "judge_reasoning": "Good firm tone — assertive without being hostile. Correctly escalates to 'senior claims specialist'. Evidence-based pushback. Clear ask maintained.",
-      "pass": true
+      "judge_reasoning": "The email misidentifies the ship method as 'UPS Ground SLA' when the context specifies UPS_2DAY, which is a material factual error that could undermine the claim. The tone is professional and appropriate for a second attempt but leans generic rather than carrier-specific or warmly accountable. Completeness is adequate with tracking ID, dates, and amount present, but lacks a specific UPS Service Guarantee policy citation; actionability is strong with a clear dollar amount and escalation request.",
+      "pass": false,
+      "failure_mode": "Factual accuracy failure: the draft incorrectly references 'UPS Ground SLA' instead of the correct UPS 2-Day Air service guarantee, which could cause the resubmission to be denied on the same or new grounds. Overall score of 3.0 falls below the 3.5 passing threshold."
     },
     {
       "id": "EV-012",
-      "category": "Rejection Resubmission — Firm Tone",
+      "category": "Rejection Resubmission \u2014 Firm Tone",
       "input": {
         "carrier": "FedEx",
         "ship_method": "FEDEX_2DAY",
@@ -351,22 +352,22 @@
         "current_probability": 0.65
       },
       "generated_draft": {
-        "subject": "RESUBMISSION — Additional Documentation — 774899172120",
-        "body": "Dear FedEx Claims Team,\n\nWe are resubmitting claim for 774899172120 (FedEx 2-Day, March 8, 2026) with additional documentation as requested.\n\nGuaranteed delivery: March 10, 2026. Actual delivery: March 11, 2026 — 1 day past guarantee.\n\nEnclosed: [1] Full tracking history export, [2] Invoice confirming ship date and method, [3] Delivery confirmation with timestamps.\n\nWe request reconsideration of this claim and reimbursement of $34.99 per FedEx Money Back Guarantee.\n\nREBLOOM Logistics"
+        "subject": "RESUBMISSION \u2014 Additional Documentation \u2014 774899172120",
+        "body": "Dear FedEx Claims Team,\n\nWe are resubmitting claim for 774899172120 (FedEx 2-Day, March 8, 2026) with additional documentation as requested.\n\nGuaranteed delivery: March 10, 2026. Actual delivery: March 11, 2026 \u2014 1 day past guarantee.\n\nEnclosed: [1] Full tracking history export, [2] Invoice confirming ship date and method, [3] Delivery confirmation with timestamps.\n\nWe request reconsideration of this claim and reimbursement of $34.99 per FedEx Money Back Guarantee.\n\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.0,
-        "factual_accuracy": 4.5,
-        "completeness": 4.5,
-        "actionability": 4.5,
-        "overall": 4.38
+        "tone_appropriateness": 4,
+        "factual_accuracy": 5,
+        "completeness": 5,
+        "actionability": 5,
+        "overall": 4.75
       },
-      "judge_reasoning": "Good structure. Directly addresses rejection reason (insufficient docs) by listing specific documents. Tone is firm but not confrontational.",
+      "judge_reasoning": "The draft is professionally firm and appropriate for a second attempt resubmission, avoiding aggressive language while maintaining assertiveness. All factual details \u2014 tracking number, ship method, guaranteed and actual delivery dates, delay duration, and claim amount \u2014 precisely match the provided context. The email is complete with enumerated supporting documents and a policy reference, and the actionability is strong with a specific dollar amount and a clear reconsideration request.",
       "pass": true
     },
     {
       "id": "EV-013",
-      "category": "Rejection Resubmission — Firm Tone",
+      "category": "Rejection Resubmission \u2014 Firm Tone",
       "input": {
         "carrier": "UPS",
         "ship_method": "UPS_GROUND",
@@ -381,22 +382,22 @@
         "current_probability": 0.62
       },
       "generated_draft": {
-        "subject": "RESUBMISSION: Claim Window Dispute — 1Z999AA10123456721",
-        "body": "Dear Shippo Claims Team,\n\nWe are contesting the denial of claim for 1Z999AA10123456721 on grounds of filing window. Our original claim was submitted on March 14, 2026 — 13 days after ship date of March 1, within the 15-day UPS filing window.\n\nWe request reinstatement of this claim and reimbursement of $15.99.\n\nREBLOOM Logistics"
+        "subject": "RESUBMISSION: Claim Window Dispute \u2014 1Z999AA10123456721",
+        "body": "Dear Shippo Claims Team,\n\nWe are contesting the denial of claim for 1Z999AA10123456721 on grounds of filing window. Our original claim was submitted on March 14, 2026 \u2014 13 days after ship date of March 1, within the 15-day UPS filing window.\n\nWe request reinstatement of this claim and reimbursement of $15.99.\n\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.0,
-        "factual_accuracy": 4.0,
-        "completeness": 4.0,
-        "actionability": 4.0,
-        "overall": 4.0
+        "tone_appropriateness": 3,
+        "factual_accuracy": 4,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 3.5
       },
-      "judge_reasoning": "Appropriately firm on a disputed filing window claim. Math is correct (13 days = within window). Could be stronger with original submission confirmation number.",
+      "judge_reasoning": "The tone is professional and appropriately firm for a second attempt, but lacks warmth or any acknowledgment of the prior denial, which would strengthen the resubmission framing. Factual accuracy is strong \u2014 tracking number, dates, and amount align with the claim context, though the 15-day UPS filing window reference could be tied to a specific UPS policy document or citation for added credibility. Completeness covers the core fields but is missing supporting evidence references (e.g., original submission confirmation, ship date documentation) and a specific next-step deadline or escalation path.",
       "pass": true
     },
     {
       "id": "EV-014",
-      "category": "Weather Delay — Low Probability",
+      "category": "Weather Delay \u2014 Low Probability",
       "input": {
         "carrier": "UPS",
         "ship_method": "UPS_GROUND",
@@ -405,28 +406,28 @@
         "delay_days": 2,
         "failure_type": "CARRIER_DELAY",
         "claim_amount": 12.99,
-        "first_bad_event": "Weather delay — winter storm warning — Louisville",
+        "first_bad_event": "Weather delay \u2014 winter storm warning \u2014 Louisville",
         "attempt_number": 1,
         "tone_requested": "professional",
         "current_probability": 0.38
       },
       "generated_draft": {
-        "subject": "Shipping Guarantee Claim — 1Z999AA10123456730 — Weather Delay",
+        "subject": "Shipping Guarantee Claim \u2014 1Z999AA10123456730 \u2014 Weather Delay",
         "body": "Dear Shippo Claims Team,\n\nWe are filing a claim for tracking 1Z999AA10123456730 (UPS Ground, February 10, 2026). A 2-day delay occurred, with weather cited as the cause. We understand weather events are subject to force majeure review, but wish to formally submit this claim for consideration.\n\nIf the weather exemption criteria are not met, we request the shipping fee ($12.99) be refunded per UPS Service Guarantee.\n\nBest regards,\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 4.0,
-        "factual_accuracy": 4.5,
-        "completeness": 4.0,
-        "actionability": 3.5,
-        "overall": 4.0
+        "tone_appropriateness": 4,
+        "factual_accuracy": 3,
+        "completeness": 3,
+        "actionability": 4,
+        "overall": 3.5
       },
-      "judge_reasoning": "Good handling of weather case — acknowledges uncertainty without conceding. Slightly too apologetic. Actionability slightly weak ('if criteria not met' hedging).",
+      "judge_reasoning": "The tone is professional and appropriately measured for a first attempt, acknowledging the force majeure complexity without being aggressive or overly demanding. Factual accuracy is mostly solid \u2014 tracking number, ship method, delay days, and amount are correct \u2014 but the subject line references 'Weather Delay' while the claim context only specifies CARRIER_DELAY, which may be an unverified assumption that could undermine the claim. Completeness is adequate with core fields present and a policy reference, but lacks supporting evidence (e.g., screenshots, delivery confirmation, order date) and a specific refund mechanism or timeline ask.",
       "pass": true
     },
     {
       "id": "EV-015",
-      "category": "Weather Delay — Low Probability",
+      "category": "Weather Delay \u2014 Low Probability",
       "input": {
         "carrier": "FedEx",
         "ship_method": "FEDEX_GROUND",
@@ -435,50 +436,39 @@
         "delay_days": 3,
         "failure_type": "CARRIER_DELAY",
         "claim_amount": 18.49,
-        "first_bad_event": "Weather delay — winter storm — Nashville hub",
+        "first_bad_event": "Weather delay \u2014 winter storm \u2014 Nashville hub",
         "attempt_number": 1,
         "tone_requested": "professional",
         "current_probability": 0.33
       },
       "generated_draft": {
-        "subject": "Shipping Guarantee Claim — 774899172130 — Service Delay",
+        "subject": "Shipping Guarantee Claim \u2014 774899172130 \u2014 Service Delay",
         "body": "Dear FedEx Claims Team,\n\nWe are submitting a claim for tracking 774899172130 (FedEx Ground, January 15, 2026) which experienced a 3-day delay. We acknowledge weather conditions were cited; however, we are submitting this claim for formal review as the delay significantly impacted our perishable shipment.\n\nAmount claimed: $18.49 shipping fee.\n\nThank you for your consideration.\n\nREBLOOM Logistics"
       },
       "judge_scores": {
-        "tone_appropriateness": 3.5,
-        "factual_accuracy": 4.0,
-        "completeness": 3.5,
-        "actionability": 3.5,
-        "overall": 3.63
+        "tone_appropriateness": 4,
+        "factual_accuracy": 4,
+        "completeness": 3,
+        "actionability": 3,
+        "overall": 3.5
       },
-      "judge_reasoning": "Weakest in set. Tone slightly too deferential for weather case. Missing guaranteed vs actual delivery dates. The 'perishable shipment' mention is good but not leveraged effectively for urgency.",
+      "judge_reasoning": "The tone is professional and appropriately measured for a first attempt, acknowledging the weather caveat while still asserting the claim \u2014 avoiding both aggression and excessive deference. All core facts (tracking number, ship method, date, delay duration, amount) are accurately represented, though FedEx Ground's standard service guarantee exclusions for weather are not explicitly addressed, and no FedEx policy citation or supporting evidence (e.g., delivery confirmation, invoice) is referenced. The claim amount is clearly stated, but the resolution request is vague \u2014 there is no explicit ask for a refund, credit, or specific next step from FedEx.",
       "pass": true
     }
   ],
   "summary": {
     "total": 15,
-    "passed": 14,
-    "failed": 1,
-    "failure_modes": [
-      {
-        "id": "EV-003",
-        "mode": "overly_formal_aggressive_language",
-        "action_taken": "Prompt updated to explicitly prohibit 'formally demand', 'within X business days' language"
-      }
-    ],
-    "scores_by_category": {
-      "UPS_Late_First_Attempt": {"count": 4, "avg": 4.1},
-      "FedEx_Damage": {"count": 3, "avg": 4.42},
-      "Carrier_Delay_Mechanical": {"count": 3, "avg": 4.75},
-      "Rejection_Resubmission_Firm": {"count": 3, "avg": 4.29},
-      "Weather_Delay_Low_Probability": {"count": 2, "avg": 3.82}
-    },
-    "overall_average": 4.41,
+    "passed": 13,
+    "failed": 2,
+    "pass_rate": "87%",
+    "run_timestamp": "2026-04-12T10:20:22.710032",
+    "model_judge": "claude-sonnet-4-6",
     "dimension_averages": {
-      "tone_appropriateness": 4.27,
-      "factual_accuracy": 4.57,
-      "completeness": 4.23,
-      "actionability": 4.27
+      "tone_appropriateness": 3.6,
+      "factual_accuracy": 4.13,
+      "completeness": 3.47,
+      "actionability": 4.07,
+      "overall": 3.82
     }
   }
 }
